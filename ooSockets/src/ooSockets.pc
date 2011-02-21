@@ -1,0 +1,5 @@
+Name: ooSockets
+Description: Simple object oriented socket library
+Version: 1.0.0
+Libs: --std=c++0x -L/usr/local/lib -looSockets -lpthread -lboost_regex
+Cflags: -I/usr/include/ooSockets
