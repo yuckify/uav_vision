@@ -15,7 +15,7 @@ linux-g++ {
 	LIBS += `pkg-config --libs opencv`
 }
 QMAKE_CXXFLAGS = -std=c++0x
-INCLUDEPATH += ../../ooSockets2.0.2/src \
+INCLUDEPATH += ../../ooSockets/src \
     ../common
 LIBS += -L/opt/local/lib/gcc45 \
     -L. \
@@ -25,55 +25,55 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_system 
 SOURCES += main.cpp \
     CVOperator.cpp \
-    ../../ooSockets2.0.2/src/OVersion.cpp \
-    ../../ooSockets2.0.2/src/OUdpSocket.cpp \
-    ../../ooSockets2.0.2/src/OTimer.cpp \
-    ../../ooSockets2.0.2/src/OTime.cpp \
-    ../../ooSockets2.0.2/src/OThread.cpp \
-    ../../ooSockets2.0.2/src/OTcpSocket.cpp \
-    ../../ooSockets2.0.2/src/OTcpServer.cpp \
-    ../../ooSockets2.0.2/src/OString.cpp \
-    ../../ooSockets2.0.2/src/OSocket.cpp \
-    ../../ooSockets2.0.2/src/OSockError.cpp \
-    ../../ooSockets2.0.2/src/OSockAddress.cpp \
-    ../../ooSockets2.0.2/src/OSerialError.cpp \
-    ../../ooSockets2.0.2/src/OSerial.cpp \
-    ../../ooSockets2.0.2/src/OO.cpp \
-    ../../ooSockets2.0.2/src/OProperties.cpp \
-    ../../ooSockets2.0.2/src/OPipeError.cpp \
-    ../../ooSockets2.0.2/src/OPipe.cpp \
-    ../../ooSockets2.0.2/src/ONet.cpp \
-    ../../ooSockets2.0.2/src/OMacAddress.cpp \
-    ../../ooSockets2.0.2/src/OFormLetter.cpp \
-    ../../ooSockets2.0.2/src/OByteArray.cpp \
-    ../../ooSockets2.0.2/src/OAddressInfo.cpp \
+    ../../ooSockets/src/OVersion.cpp \
+    ../../ooSockets/src/OUdpSocket.cpp \
+    ../../ooSockets/src/OTimer.cpp \
+    ../../ooSockets/src/OTime.cpp \
+    ../../ooSockets/src/OThread.cpp \
+    ../../ooSockets/src/OTcpSocket.cpp \
+    ../../ooSockets/src/OTcpServer.cpp \
+    ../../ooSockets/src/OString.cpp \
+    ../../ooSockets/src/OSocket.cpp \
+    ../../ooSockets/src/OSockError.cpp \
+    ../../ooSockets/src/OSockAddress.cpp \
+    ../../ooSockets/src/OSerialError.cpp \
+    ../../ooSockets/src/OSerial.cpp \
+    ../../ooSockets/src/OO.cpp \
+    ../../ooSockets/src/OProperties.cpp \
+    ../../ooSockets/src/OPipeError.cpp \
+    ../../ooSockets/src/OPipe.cpp \
+    ../../ooSockets/src/ONet.cpp \
+    ../../ooSockets/src/OMacAddress.cpp \
+    ../../ooSockets/src/OFormLetter.cpp \
+    ../../ooSockets/src/OByteArray.cpp \
+    ../../ooSockets/src/OAddressInfo.cpp \
     ../common/ImageDatabase.cpp
 HEADERS += CVOperator.h \
-    ../../ooSockets2.0.2/src/OVersion.hpp \
-    ../../ooSockets2.0.2/src/OUdpSocket.hpp \
-    ../../ooSockets2.0.2/src/OTimerBase.hpp \
-    ../../ooSockets2.0.2/src/OTimer.hpp \
-    ../../ooSockets2.0.2/src/OTime.hpp \
-    ../../ooSockets2.0.2/src/OThread.hpp \
-    ../../ooSockets2.0.2/src/OTcpSocket.hpp \
-    ../../ooSockets2.0.2/src/OTcpServer.hpp \
-    ../../ooSockets2.0.2/src/OString.hpp \
-    ../../ooSockets2.0.2/src/OSocket.hpp \
-    ../../ooSockets2.0.2/src/OSockError.hpp \
-    ../../ooSockets2.0.2/src/OSockAddress.hpp \
-    ../../ooSockets2.0.2/src/OSerialError.hpp \
-    ../../ooSockets2.0.2/src/OSerial.hpp \
-    ../../ooSockets2.0.2/src/OO.hpp \
-    ../../ooSockets2.0.2/src/OProperties.hpp \
-    ../../ooSockets2.0.2/src/OPipeError.hpp \
-    ../../ooSockets2.0.2/src/OPipe.hpp \
-    ../../ooSockets2.0.2/src/ONet.hpp \
-    ../../ooSockets2.0.2/src/OMacAddress.hpp \
-    ../../ooSockets2.0.2/src/OList.hpp \
-    ../../ooSockets2.0.2/src/OIODevice.hpp \
-    ../../ooSockets2.0.2/src/OFormLetter.hpp \
-    ../../ooSockets2.0.2/src/OByteArray.hpp \
-    ../../ooSockets2.0.2/src/OAddressInfo.hpp \
+    ../../ooSockets/src/OVersion.hpp \
+    ../../ooSockets/src/OUdpSocket.hpp \
+    ../../ooSockets/src/OTimerBase.hpp \
+    ../../ooSockets/src/OTimer.hpp \
+    ../../ooSockets/src/OTime.hpp \
+    ../../ooSockets/src/OThread.hpp \
+    ../../ooSockets/src/OTcpSocket.hpp \
+    ../../ooSockets/src/OTcpServer.hpp \
+    ../../ooSockets/src/OString.hpp \
+    ../../ooSockets/src/OSocket.hpp \
+    ../../ooSockets/src/OSockError.hpp \
+    ../../ooSockets/src/OSockAddress.hpp \
+    ../../ooSockets/src/OSerialError.hpp \
+    ../../ooSockets/src/OSerial.hpp \
+    ../../ooSockets/src/OO.hpp \
+    ../../ooSockets/src/OProperties.hpp \
+    ../../ooSockets/src/OPipeError.hpp \
+    ../../ooSockets/src/OPipe.hpp \
+    ../../ooSockets/src/ONet.hpp \
+    ../../ooSockets/src/OMacAddress.hpp \
+    ../../ooSockets/src/OList.hpp \
+    ../../ooSockets/src/OIODevice.hpp \
+    ../../ooSockets/src/OFormLetter.hpp \
+    ../../ooSockets/src/OByteArray.hpp \
+    ../../ooSockets/src/OAddressInfo.hpp \
     ../common/Defs.h \
     ../common/ImageDatabase.h
 FORMS += CVOperator.ui
