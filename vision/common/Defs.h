@@ -35,11 +35,12 @@ using boost::unique_lock;
  *	
 */
 enum Packet {
+	//streaming packets
 	VideoFrameHeader = 1,
 	VideoFrameSegment,
 	Telemetry,
 	
-	ImageCapture,
+	//high resolutions image details
 	ImageList,
 	ImageDetails,
 	ImageSeg,
@@ -47,6 +48,12 @@ enum Packet {
 	CompressionMethod,
 	ErrorMsg,
 	
+	//camera controls
+	CameraZoomIn,
+	CameraZoomOut,
+	CameraPower,
+	CameraCapture,
+	CameraDownload
 };
 
 

@@ -9,7 +9,7 @@
 struct ImageInfo : public OSerializable {
 	ImageInfo();
 	ImageInfo(OString name, uint16_t yaw, uint16_t pitch, uint16_t roll,
-			  uint32_t x, uint32_t y, uint32_t alt);
+			  uint32_t x, uint32_t y, uint32_t alt, bool download, bool ground);
 	
 	OString		i_name;
 	
@@ -23,10 +23,11 @@ struct ImageInfo : public OSerializable {
 	
 	uint32_t i_alt;		//altitude
 	
-	bool i_downloaded;	//this field tells tells us if the image
+	bool i_downloaded;	//this field tells us if the image
 						//has been downloaded form the camera to
 						//the flight linux computer
-	
+	bool i_grounded;	//this field tells us if the image
+						//has been downloaded to the ground station
 	void serialize(OByteArray &ar, OO::ArrayBase ba);
 	
 };

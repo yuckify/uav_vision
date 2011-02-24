@@ -16,6 +16,7 @@
 #include<QSocketNotifier>
 #include<QLineEdit>
 #include<QPushButton>
+#include<QTableWidget>
 
 #include<iostream>
 #include<memory>
@@ -32,6 +33,7 @@
 
 #include<Defs.h>
 #include<ImageDatabase.h>
+//#include<SqlTableModel.hpp>
 
 using namespace std;
 
@@ -64,6 +66,10 @@ protected:
 	void setCVIdentifierStatus(bool stat);
 	void setAutoPilotStatus(bool stat);
 	
+	//update the gui table for the list of images
+	QTableWidget* imagetable;
+	QDockWidget* itdock;
+	void showImageDb(ImageDatabase& db);
 	
 	//networking
 	OTcpSocket* conn;
@@ -82,7 +88,28 @@ protected:
 public slots:
 	//this function is called when the button 'updatecomp' is pressed
 	void compPressed();
+	
+	//callbacks for controlling the camera, callbacks are called when
+	//the respective button is pressed
+	void camera_zin();
+	void camera_zout();
+	void camera_capture();
+	void camera_power();
+	void camera_download();
+	
+	//this function is for sending small messages that requires no
+	//real payload, the message is composed of just the header
+	void smallMsg(int in);
+	
+	//callbacks for options in "window" in the toolbar
+	void window_status();
+	void window_images();
+	void status_vis(bool i);
+	void images_vis(bool i);
 protected:
+	QMenu* menu_window;
+	QAction* action_images;
+	QAction* action_status;
 	
 	//this is the video frame that we are currently receiving
 	//that needs to be fully received before it can be uncompressed

@@ -215,6 +215,8 @@ public:
 	}
 	
 	template <class T> void read(vector<T>& vec) {
+		vec.clear();
+		
 		uint32_t len = 0;
 		OByteArray& arr = *this;
 		arr>>len;
@@ -227,6 +229,8 @@ public:
 	}
 	
 	template <class T, class U> void read(map<T, U>& ma) {
+		ma.clear();
+		
 		OByteArray& arr = *this;
 		uint32_t length;
 		arr>>length;

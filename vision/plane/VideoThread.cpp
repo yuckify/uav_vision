@@ -11,7 +11,7 @@ VideoThread::VideoThread(bst::mutex &mut, queue<OByteArray> &pkts, OPipe &p, Pla
 	this->callback(bind(&VideoThread::run, this));
 	
 	//the default compression to use for the live video stream
-	compext = ".png";
+	compext = ".jpeg";
 }
 
 void VideoThread::run() {

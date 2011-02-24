@@ -9,18 +9,20 @@ void DebugMsg(OString str) {
 
 CVOperator::CVOperator(QWidget *parent) : 
 	QMainWindow(parent), ui(new Ui::CVOperator) {
-	
 	ui->setupUi(this);
-	
 	skip = -1;
-	
-	//setup the capture thread to do the actual capturing
-	
-//	imgview = new QGraphicsView;
-//	imgscene = new QGraphicsScene;
-//	imgview->setScene(imgscene);
-	
 	cvNamedWindow("window");
+	
+	menu_window = new QMenu(tr("Window"));
+	this->menuBar()->addMenu(menu_window);
+	//setup the windows menu in the main toolbar
+	
+	action_status = menu_window->addAction(tr("Status"), this, SLOT(window_status()));
+	action_images = menu_window->addAction(tr("Images"), this, SLOT(window_images()));
+	action_status->setCheckable(true);
+	action_images->setCheckable(true);
+	action_status->setChecked(true);
+	action_images->setChecked(true);
 	
 	disp = new QLabel;
 	disp->setBackgroundRole(QPalette::Base);
@@ -28,14 +30,57 @@ CVOperator::CVOperator(QWidget *parent) :
 	disp->setScaledContents(true);
 	setCentralWidget(disp);
 	
+	//setup the image table
+	QStringList header;
+	header.append(tr("Name"));
+	header.append(tr("Downloaded"));
+	header.append(tr("Grounded"));
+	header.append(tr("Yaw"));
+	header.append(tr("Pitch"));
+	header.append(tr("Roll"));
+	header.append(tr("X"));
+	header.append(tr("Y"));
+	header.append(tr("Alt"));
+	imagetable = new QTableWidget(0, 9);
+	imagetable->setHorizontalHeaderLabels(header);
+	//setup the dock to display the image table
+	itdock = new QDockWidget(tr("Images"));
+	connect(itdock, SIGNAL(visibilityChanged(bool)), this, SLOT(images_vis(bool)));
+	itdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea 
+							| Qt::BottomDockWidgetArea);
+	itdock->setWidget(imagetable);
+	this->addDockWidget(Qt::RightDockWidgetArea, itdock);
+	
+	
 	//add a text box so we can easily change the compression method in realtime
 	compress = new QLineEdit;
 	updatecomp = new QPushButton(tr("Set Compression"));
 	connect(updatecomp, SIGNAL(pressed()), this, SLOT(compPressed()));
 	
+	//setup the buttons to control the camera
+	QPushButton* zin = new QPushButton(tr("Zoom In"));
+	QPushButton* zout = new QPushButton(tr("Zoom Out"));
+	QPushButton* pwr = new QPushButton(tr("Power"));
+	QPushButton* cpt = new QPushButton(tr("Capture"));
+	QPushButton* dl = new QPushButton(tr("Download"));
+	//setup the callbacks
+	connect(zin, SIGNAL(pressed()), this, SLOT(camera_zin()));
+	connect(zout, SIGNAL(pressed()), this, SLOT(camera_zout()));
+	connect(pwr, SIGNAL(pressed()), this, SLOT(camera_power()));
+	connect(cpt, SIGNAL(pressed()), this, SLOT(camera_capture()));
+	connect(dl, SIGNAL(pressed()), this, SLOT(camera_download()));
+	//setup the layout for the buttons
+	QHBoxLayout* control1 = new QHBoxLayout;
+	QHBoxLayout* control2 = new QHBoxLayout;
+	control1->addWidget(zin);
+	control1->addWidget(zout);
+	control2->addWidget(pwr);
+	control2->addWidget(cpt);
+	
 	//setup the status dock for display status of devices and stuff
 	statusdock = new QDockWidget(tr("Status"));
 	statusdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+	connect(statusdock, SIGNAL(visibilityChanged(bool)), this, SLOT(status_vis(bool)));
 	this->addDockWidget(Qt::LeftDockWidgetArea, statusdock);
 	
 	statlayout = new QVBoxLayout;
@@ -49,6 +94,9 @@ CVOperator::CVOperator(QWidget *parent) :
 	statlayout->addWidget(apstat);
 	statlayout->addWidget(compress);
 	statlayout->addWidget(updatecomp);
+	statlayout->addLayout(control1);
+	statlayout->addLayout(control2);
+	statlayout->addWidget(dl);
 	statusdock->setWidget(widgetwrapper);
 	
 	
@@ -90,6 +138,60 @@ void CVOperator::compPressed() {
 	} else {
 		cout<<"Error: Not Connected" <<endl;
 	}
+}
+
+void CVOperator::camera_zin() {
+	smallMsg(CameraZoomIn);
+}
+
+void CVOperator::camera_zout() {
+	smallMsg(CameraZoomOut);
+}
+
+void CVOperator::camera_capture() {
+	smallMsg(CameraCapture);
+	smallMsg(ImageDetails);
+}
+
+void CVOperator::camera_power() {
+	smallMsg(CameraPower);
+}
+
+void CVOperator::camera_download() {
+	smallMsg(CameraDownload);
+}
+
+void CVOperator::smallMsg(int in) {
+	if(conn) {
+		PacketType type = in;
+		PacketLength length = 0;
+		
+		OByteArray pack;
+		pack<<length <<type;
+		
+		length = pack.size() - sizeof(PacketLength);
+		pack.seek(0);
+		pack<<length;
+		
+		conn->write(pack);
+	}
+}
+
+void CVOperator::window_status() {
+	statusdock->setVisible(!statusdock->isVisible());
+}
+
+void CVOperator::window_images() {
+	itdock->setVisible(!itdock->isVisible());
+}
+
+void CVOperator::status_vis(bool i) {
+	action_status->setChecked(i);
+}
+
+void CVOperator::images_vis(bool i) {
+	cout<<"im: " <<i <<endl;
+	action_images->setChecked(i);
 }
 
 void CVOperator::multError(OSockError e) {
@@ -182,6 +284,8 @@ void CVOperator::connReadyRead() {
 	case ImageDetails: {
 			pack>>db;
 			
+			showImageDb(db);
+			
 			break;
 		}
 	case ErrorMsg: {
@@ -262,4 +366,24 @@ void CVOperator::setAutoPilotStatus(bool stat) {
 		apstat->setText(tr("Auto Pilot: true"));
 	else
 		apstat->setText(tr("Auto Pilot: false"));
+}
+
+void CVOperator::showImageDb(ImageDatabase &db) {
+	imagetable->setRowCount(db.size());
+	
+	for(int i=0; i<db.size(); i++) {
+		QString str;
+		
+		imagetable->setItem(i, 0, new QTableWidgetItem(QString(db[i].i_name.toCString())));
+		imagetable->setItem(i, 1, new QTableWidgetItem(str.setNum(db[i].i_downloaded)));
+		imagetable->setItem(i, 2, new QTableWidgetItem(str.setNum(db[i].i_grounded)));
+		imagetable->setItem(i, 3, new QTableWidgetItem(str.setNum(db[i].i_yaw)));
+		imagetable->setItem(i, 4, new QTableWidgetItem(str.setNum(db[i].i_pitch)));
+		imagetable->setItem(i, 5, new QTableWidgetItem(str.setNum(db[i].i_roll)));
+		imagetable->setItem(i, 6, new QTableWidgetItem(str.setNum(db[i].i_x)));
+		imagetable->setItem(i, 7, new QTableWidgetItem(str.setNum(db[i].i_y)));
+		imagetable->setItem(i, 8, new QTableWidgetItem(str.setNum(db[i].i_alt)));
+		
+	}
+	
 }

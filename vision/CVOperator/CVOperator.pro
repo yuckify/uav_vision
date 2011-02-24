@@ -2,7 +2,8 @@
 # Project created by QtCreator 2010-06-20T19:31:03
 # -------------------------------------------------
 QT += network \
-    xml
+    xml \
+	sql
 TARGET = CVOperator
 TEMPLATE = app
 macx {
@@ -75,5 +76,6 @@ HEADERS += CVOperator.h \
     ../../ooSockets/src/OByteArray.hpp \
     ../../ooSockets/src/OAddressInfo.hpp \
     ../common/Defs.h \
-    ../common/ImageDatabase.h
+    ../common/ImageDatabase.h \
+    SqlTableModel.hpp
 FORMS += CVOperator.ui

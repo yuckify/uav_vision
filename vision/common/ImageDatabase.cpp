@@ -7,10 +7,12 @@ ImageInfo::ImageInfo() {
 	i_x = 0;
 	i_y = 0;
 	i_downloaded = false;
+	i_grounded = false;
 }
 
 ImageInfo::ImageInfo(OString name, uint16_t yaw, uint16_t pitch, 
-					 uint16_t roll, uint32_t x, uint32_t y, uint32_t alt) {
+					 uint16_t roll, uint32_t x, uint32_t y, uint32_t alt,
+					 bool download, bool ground) {
 	i_name = name;
 	i_yaw = yaw;
 	i_pitch = pitch;
@@ -18,7 +20,8 @@ ImageInfo::ImageInfo(OString name, uint16_t yaw, uint16_t pitch,
 	i_x = x;
 	i_y = y;
 	i_alt = alt;
-	i_downloaded = false;
+	i_downloaded = download;
+	i_grounded = ground;
 }
 
 void ImageInfo::serialize(OByteArray &ar, OO::ArrayBase ba) {
@@ -30,6 +33,7 @@ void ImageInfo::serialize(OByteArray &ar, OO::ArrayBase ba) {
 	ar & i_y;
 	ar & i_alt;
 	ar & i_downloaded;
+	ar & i_grounded;
 }
 
 ImageDatabase::ImageDatabase() {
@@ -64,7 +68,9 @@ void ImageDatabase::save(OString fn) {
 	for(unsigned int i=0; i<images.size(); i++) {
 		ImageInfo& info = images[i];
 		file<<info.i_name <<"," <<info.i_yaw <<"," <<info.i_pitch <<"," 
-				<<info.i_roll <<"," <<info.i_x <<"," <<info.i_y <<endl;
+				<<info.i_roll <<"," <<info.i_x <<"," <<info.i_y <<","
+				<<info.i_alt <<"," <<info.i_downloaded <<"," 
+				<<info.i_grounded <<endl;
 	}
 }
 
@@ -81,11 +87,12 @@ bool ImageDatabase::load(OString fn) {
 		
 		OStringList args = line.split(",");
 		
-		if(args.size() < 6) continue;
+		if(args.size() < 9) continue;
 		
 		images.push_back(ImageInfo(args[0], (uint16_t)args[1].toInt(),
 								   (uint16_t)args[2].toInt(), (uint16_t)args[3].toInt(),
-								   args[4].toInt(), args[5].toInt(), args[6].toInt()));
+								   args[4].toInt(), args[5].toInt(), args[6].toInt(),
+								   args[7].toInt(), args[8].toInt()));
 	}
 	
 	return true;

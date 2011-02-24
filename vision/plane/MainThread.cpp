@@ -145,20 +145,6 @@ void MainThread::groundReadyRead() {
 	pack>>type;
 	
 	switch(type) {
-	case ImageCapture: {
-			//send the signal to the arduino to capture an image
-			//TODO
-			
-			//add the newly capture image to the db
-			db.add(ImageInfo("", info.yaw, info.pitch, info.roll, 
-							 info.x, info.y, info.alt));
-			
-			//save the database to the hard drive so we have a backup copy
-			//of it incase this program crashes, worst case scenario
-			db.save(DBFILENAME);
-			
-			break;
-		}
 	case ImageDetails: {
 			OByteArray data;
 			
@@ -183,6 +169,36 @@ void MainThread::groundReadyRead() {
 			OString tmp;
 			pack>>tmp;
 			vthread->setCompression(tmp);
+			
+			break;
+		}
+	case CameraZoomIn: {
+			
+			break;
+		}
+	case CameraZoomOut: {
+			
+			break;
+		}
+	case CameraCapture: {
+			//send the signal to the arduino to capture an image
+			//TODO
+			
+			//add the newly capture image to the db
+			db.add(ImageInfo("", info.yaw, info.pitch, info.roll, 
+							 info.x, info.y, info.alt, false, false));
+			
+			//save the database to the hard drive so we have a backup copy
+			//of it incase this program crashes, worst case scenario
+			db.save(DBFILENAME);
+			
+			break;
+		}
+	case CameraPower: {
+			
+			break;
+		}
+	case CameraDownload: {
 			
 			break;
 		}
