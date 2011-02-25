@@ -1,13 +1,14 @@
 #ifndef MAINTHREAD_H
 #define MAINTHREAD_H
 
-#include<queue>
+#include<deque>
 //#include<thread>
 //#include<mutex>
 #include<sys/types.h>
 #include<memory>
 
 #include<boost/thread/mutex.hpp>
+#include<boost/filesystem.hpp>
 
 namespace bst = boost;
 
@@ -31,8 +32,10 @@ namespace bst = boost;
 
 #define DEBUG 1
 
-#define DBFILENAME "imagedb.txt"
+#define DBPATH		"db"
+#define DBFILENAME DBPATH"/imagedb.txt"
 
+namespace bfs = boost::filesystem;
 
 using namespace std;
 
@@ -98,7 +101,7 @@ private:
 	//these are the queues where the data is push into from
 	//the serial port and the video thread
 	bst::mutex videolock;
-	queue<OByteArray> videopacks;
+	deque<OByteArray> videopacks;
 	
 	//this is the serial interface to send camera commands to the 
 	//controlling arduino

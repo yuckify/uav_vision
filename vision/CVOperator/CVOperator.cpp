@@ -11,12 +11,18 @@ CVOperator::CVOperator(QWidget *parent) :
 	QMainWindow(parent), ui(new Ui::CVOperator) {
 	ui->setupUi(this);
 	skip = -1;
-	cvNamedWindow("window");
 	
+	//setup the File menu list
+	menu_file = new QMenu(tr("File"));
+	this->menuBar()->addMenu(menu_file);
+	//add actions to the file menu
+	action_quit = menu_file->addAction(tr("Quit"), this, SLOT(file_quit()));
+	
+	//setup the Window menu list
 	menu_window = new QMenu(tr("Window"));
 	this->menuBar()->addMenu(menu_window);
-	//setup the windows menu in the main toolbar
-	
+	//setup the windows menu in the main menu bar
+	//add actions to the window menu
 	action_status = menu_window->addAction(tr("Status"), this, SLOT(window_status()));
 	action_images = menu_window->addAction(tr("Images"), this, SLOT(window_images()));
 	action_status->setCheckable(true);
@@ -24,10 +30,12 @@ CVOperator::CVOperator(QWidget *parent) :
 	action_status->setChecked(true);
 	action_images->setChecked(true);
 	
+	//this is the label that will be used to display the video stream
+	//in the main window
 	disp = new QLabel;
 	disp->setBackgroundRole(QPalette::Base);
 	disp->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-	disp->setScaledContents(true);
+	disp->setScaledContents(false);
 	setCentralWidget(disp);
 	
 	//setup the image table
@@ -177,6 +185,10 @@ void CVOperator::smallMsg(int in) {
 	}
 }
 
+void CVOperator::file_quit() {
+	QApplication::quit();
+}
+
 void CVOperator::window_status() {
 	statusdock->setVisible(!statusdock->isVisible());
 }
@@ -190,7 +202,6 @@ void CVOperator::status_vis(bool i) {
 }
 
 void CVOperator::images_vis(bool i) {
-	cout<<"im: " <<i <<endl;
 	action_images->setChecked(i);
 }
 
@@ -272,11 +283,47 @@ void CVOperator::connReadyRead() {
 				
 				if(img == NULL) return;
 				
-				cvShowImage("window", img);
-				cvWaitKey(1);
+				
+				CvSize frame_size;
+				frame_size.height = img->height;
+				frame_size.width = img->width;
+				IplImage* dframe = cvCreateImage(frame_size, img->depth, 4);
+				
+				// the individual channels for the IplImage
+				IplImage* tchannel0 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+				IplImage* tchannel1 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+				IplImage* tchannel2 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+				IplImage* tchannel3 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+				
+				// set all elements in tchannel0 (alpha channel) to 255
+				cvSet(tchannel0,cvScalarAll(255),0);
+				
+				// with img being the captured frame (3 channel RGB)
+				// and dframe the frame to be displayed
+				cvSplit(img, tchannel1, tchannel2, tchannel3, NULL);
+				cvMerge(tchannel1, tchannel2, tchannel3, tchannel0, dframe);
+				
+				// point to the image data stored in the IplImage*
+				const unsigned char * data = (unsigned char *)(dframe->imageData);
+				
+				// read other parameters in local variables
+				int width = dframe->width;
+				int height = dframe->height;
+				int bytesPerLine = dframe->widthStep;
+				
+				disp->clear();
+				
+				// imageframe is my QLabel object
+				QImage qimage = QImage(data, width, height, bytesPerLine, QImage::Format_RGB32 );
+				disp->setPixmap(QPixmap::fromImage(qimage, 0));
 				
 				cvReleaseMat(&compFrame);
 				cvReleaseImage(&img);
+				cvReleaseImage(&dframe);
+				cvReleaseImage(&tchannel0);
+				cvReleaseImage(&tchannel1);
+				cvReleaseImage(&tchannel2);
+				cvReleaseImage(&tchannel3);
 				
 			}
 			break;

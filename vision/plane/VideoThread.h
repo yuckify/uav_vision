@@ -23,7 +23,7 @@ using namespace std;
 
 class VideoThread : public OThread {
 public:
-	VideoThread(bst::mutex& mut, queue<OByteArray>& pkts, OPipe& p, PlaneInfo& inf);
+	VideoThread(bst::mutex& mut, deque<OByteArray>& pkts, OPipe& p, PlaneInfo& inf);
 	
 	void run();
 	
@@ -32,7 +32,7 @@ public:
 private:
 	OPipe* pipe;
 	bst::mutex& videolock;
-	queue<OByteArray>& videopacks;
+	deque<OByteArray>& videopacks;
 	PlaneInfo& info;
 	//compression extension
 	bst::mutex comptex;

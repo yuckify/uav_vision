@@ -8,6 +8,18 @@ void DebugMsg(OString str) {
 
 MainThread::MainThread() :
 	initserial(this), initsertimer(this), multTimer(this) {
+	//setup the database files
+	if(bfs::is_directory(DBPATH)) {
+		//if the directory exists then this is not a cold start
+		//reload the pre-existing database files
+		db.load(DBFILENAME);
+		
+	} else {
+		//this is a cold start, create the necessary files
+		bfs::create_directory(DBPATH);
+		
+	}
+	
 	//setup the serial initializer
 	initsertimer.callback(bind(&MainThread::initSerialRead, this));
 //	initsertimer.start(1000, OO::Once);
@@ -129,6 +141,8 @@ void MainThread::groundDisconnected() {
 		delete ground;
 		ground = NULL;
 		
+		videopacks.clear();
+		
 		multTimer.start(1000, OO::Repeat);
 	}
 }
@@ -208,7 +222,7 @@ void MainThread::groundReadyRead() {
 void MainThread::groundReadyWrite() {
 	if(videopacks.size()) {
 		OByteArray pack = videopacks.front();
-		videopacks.pop();
+		videopacks.pop_front();
 		ground->write(pack);
 	}
 }

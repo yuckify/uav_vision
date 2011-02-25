@@ -1,6 +1,6 @@
 #include"VideoThread.h"
 
-VideoThread::VideoThread(bst::mutex &mut, queue<OByteArray> &pkts, OPipe &p, PlaneInfo& inf) :
+VideoThread::VideoThread(bst::mutex &mut, deque<OByteArray> &pkts, OPipe &p, PlaneInfo& inf) :
 		videolock(mut), videopacks(pkts), info(inf) {
 	//setup the pipe so we can a signal to the main thread that
 	//the video data is available
@@ -78,7 +78,7 @@ void VideoThread::run() {
 		
 		//lock the mutex and push the packet into the queue
 		videolock.lock();
-		videopacks.push(pack);
+		videopacks.push_back(pack);
 		
 		type = VideoFrameSegment;
 		for (int j=0;j<iterations;j++)  //Loop to split data into blocks
@@ -94,7 +94,7 @@ void VideoThread::run() {
 			spack<<length;
 			
 			count++; //Count for the number of pieces saved as an int, doubles as piece number
-			videopacks.push(spack);//push the video segment into the network buffer
+			videopacks.push_back(spack);//push the video segment into the network buffer
 		}
 		videolock.unlock();
 		imagecount++;

@@ -101,7 +101,10 @@ public slots:
 	//real payload, the message is composed of just the header
 	void smallMsg(int in);
 	
-	//callbacks for options in "window" in the toolbar
+	//callbacks for options in "File" in the menubar
+	void file_quit();
+	
+	//callbacks for options in "window" in the menubar
 	void window_status();
 	void window_images();
 	void status_vis(bool i);
@@ -110,6 +113,9 @@ protected:
 	QMenu* menu_window;
 	QAction* action_images;
 	QAction* action_status;
+	
+	QMenu* menu_file;
+	QAction* action_quit;
 	
 	//this is the video frame that we are currently receiving
 	//that needs to be fully received before it can be uncompressed
