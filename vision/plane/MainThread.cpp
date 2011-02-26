@@ -22,7 +22,7 @@ MainThread::MainThread() :
 	
 	//setup the serial initializer
 	initsertimer.callback(bind(&MainThread::initSerialRead, this));
-//	initsertimer.start(1000, OO::Once);
+	initsertimer.start(1000, OO::Once);
 	
 	OPortList ports = OSerial::portList().filterByType(OO::UsbPort);
 	if(ports.size() == 0) {
@@ -30,7 +30,7 @@ MainThread::MainThread() :
 		::exit(0);
 	}
 	cout<<"name: " <<ports[0].hwName() <<endl;
-	initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
+//	initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
 	
 	packnum = 0;
 	//at this point we don't actually know what the autopilot and camera control

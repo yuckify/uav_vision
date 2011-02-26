@@ -255,6 +255,10 @@ public:
 	*/
 	bool saveFile(OString fn);
 	
+	static OList<OByteArray> chunkData(const char* data, int dsize, int size);
+	static OList<OByteArray> chunkDataWithHeader(const char* data, int dsize, int size,
+												 function<void (OByteArray&, int, int)> cbk);
+	
 	/**	This OByteArray is split into an array of pieces of
 	 *	a specified size.
 	 *	@param size The size of the pieces that we are making.

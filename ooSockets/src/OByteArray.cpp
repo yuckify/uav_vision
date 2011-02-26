@@ -383,12 +383,46 @@ bool OByteArray::saveFile(OString fn) {
 	return true;
 }
 
+OList<OByteArray> OByteArray::chunkData(const char *data, int dsize, int size) {
+	return chunkDataWithHeader(data, dsize, size, NULL);
+}
+
+OList<OByteArray> OByteArray::chunkDataWithHeader(const char *data, int dsize, int size, 
+												  function<void (OByteArray &, int, int)> cbk) {
+	//calculate the number of whole chunks, don't forget the remainder
+	int chunks = dsize / size;
+	int remainder = dsize % size;
+	
+	//the data we will be returning
+	OList<OByteArray> bytes;
+	
+	//copy over the whole chunks
+	for(int i=0; i<chunks; i++) {
+		OByteArray array;
+		if(cbk) cbk(array, i, size);
+		array.append(data+i*size, size);
+		bytes.push_back(array);
+	}
+	
+	//append on the remainder
+	if(remainder) {
+		OByteArray array;
+		if(cbk) cbk(array, chunks, remainder);
+		array.append(data+chunks*size, remainder);
+		bytes.push_back(array);
+	}
+	
+	return bytes;
+}
+
 OList<OByteArray> OByteArray::chunk(int size) {
 	return chunkWithHeader(size, NULL);
 }
 
 OList<OByteArray> OByteArray::chunkWithHeader(int size, 
         function<void (OByteArray &, int, int)> cbk) {
+	
+	/*
 	//calculate the number of whole chunks, don't forget the remainder
 	int chunks = this->size() / size;
 	int remainder = this->size() % size;
@@ -413,6 +447,8 @@ OList<OByteArray> OByteArray::chunkWithHeader(int size,
 	}
 	
 	return bytes;
+	*/
+	return chunkDataWithHeader(this->data(), this->size(), size, cbk);
 }
 
 OList<OByteArray> OByteArray::chunkFileWithHeader(OString fn, 
@@ -443,7 +479,7 @@ OList<OByteArray> OByteArray::chunkFileWithHeader(OString fn,
 		OByteArray array;
 		if(cbk) cbk(array, i, size);
 		array.resize(length);
-		file.read(array.data()+i*size, size);
+		file.read(array.tellData(), size);
 		array.advanceSize(size);
 		bytes.push_back(array);
 	}
@@ -453,8 +489,8 @@ OList<OByteArray> OByteArray::chunkFileWithHeader(OString fn,
 		OByteArray array;
 		if(cbk) cbk(array, chunks, remainder);
 		array.resize(length);
-		file.read(array.data()+chunks*size, size);
-		array.advanceSize(size);
+		file.read(array.tellData(), remainder);
+		array.advanceSize(remainder);
 		bytes.push_back(array);
 	}
 	
