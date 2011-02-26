@@ -70,7 +70,7 @@ void VideoThread::run() {
 		
 		OByteArray pack;
 		pack<<length <<type <<imagecount <<iterations <<maxlength <<temp->step
-				<<temp->rows <<temp->cols <<temp->type <<info;
+				<<temp->rows <<temp->cols <<temp->type;
 		
 		length = pack.size() - sizeof(PacketLength);
 		pack.seek(0);
@@ -100,7 +100,6 @@ void VideoThread::run() {
 		imagecount++;
 		
 		cvReleaseMat(&temp);
-//		cvReleaseImage(&frame);
 		
 		//signal the main thread that this new image data is available
 		OByteArray tmp;
