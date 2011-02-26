@@ -81,6 +81,15 @@ protected:
 	void connReadyRead();
 	void connDisconnected();
 	
+	//variables to convert iplimage to qpixmap
+	bool iplconv_init;
+	IplImage* dframe;
+	// the individual channels for the IplImage
+	IplImage* tchannel0;
+	IplImage* tchannel1;
+	IplImage* tchannel2;
+	IplImage* tchannel3;
+	
 	//button and input box so we can change the compression the plane
 	//uses in realtime
 	QLineEdit* compress;
@@ -125,8 +134,6 @@ protected:
 	uint16_t align;
 	int skip;
 	int currentIndex;
-	OByteArray prev;
-	int prevlen;
 	
 	//this is the list of capture high resolution images on the plane
 	//and the opientation of the plane at the time of capture

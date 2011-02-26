@@ -30,6 +30,14 @@ CVOperator::CVOperator(QWidget *parent) :
 	action_status->setChecked(true);
 	action_images->setChecked(true);
 	
+	//setup the variables to be able to convert the iplimage to a qpixmap
+	iplconv_init = false;
+	dframe = 0;
+	tchannel0 = 0;
+	tchannel1 = 0;
+	tchannel2 = 0;
+	tchannel3 = 0;
+	
 	//this is the label that will be used to display the video stream
 	//in the main window
 	disp = new QLabel;
@@ -231,6 +239,8 @@ void CVOperator::connReadyRead() {
 	PacketType type;
 	pack>>type;
 	
+//	cout<<"length: " <<length <<" type: " <<(int)type <<endl;
+	
 	switch(type) {
 	case VideoFrameHeader: {
 			uint32_t imagecount;
@@ -287,13 +297,28 @@ void CVOperator::connReadyRead() {
 				CvSize frame_size;
 				frame_size.height = img->height;
 				frame_size.width = img->width;
-				IplImage* dframe = cvCreateImage(frame_size, img->depth, 4);
 				
-				// the individual channels for the IplImage
-				IplImage* tchannel0 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-				IplImage* tchannel1 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-				IplImage* tchannel2 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-				IplImage* tchannel3 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+				if(!iplconv_init || dframe->width != img->width || 
+						dframe->height != img->height) {
+					
+					if(dframe) {
+						cvReleaseImage(&dframe);
+						cvReleaseImage(&tchannel0);
+						cvReleaseImage(&tchannel1);
+						cvReleaseImage(&tchannel2);
+						cvReleaseImage(&tchannel3);
+					}
+					
+					dframe = cvCreateImage(frame_size, img->depth, 4);
+					
+					// the individual channels for the IplImage
+					tchannel0 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+					tchannel1 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+					tchannel2 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+					tchannel3 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+					
+					iplconv_init = true;
+				}
 				
 				// set all elements in tchannel0 (alpha channel) to 255
 				cvSet(tchannel0,cvScalarAll(255),0);
@@ -319,11 +344,11 @@ void CVOperator::connReadyRead() {
 				
 				cvReleaseMat(&compFrame);
 				cvReleaseImage(&img);
-				cvReleaseImage(&dframe);
-				cvReleaseImage(&tchannel0);
-				cvReleaseImage(&tchannel1);
-				cvReleaseImage(&tchannel2);
-				cvReleaseImage(&tchannel3);
+//				cvReleaseImage(&dframe);
+//				cvReleaseImage(&tchannel0);
+//				cvReleaseImage(&tchannel1);
+//				cvReleaseImage(&tchannel2);
+//				cvReleaseImage(&tchannel3);
 				
 			}
 			break;
@@ -343,7 +368,6 @@ void CVOperator::connReadyRead() {
 		}
 	}
 	
-	prev = pack;
 }
 
 void CVOperator::multActivated(int) {

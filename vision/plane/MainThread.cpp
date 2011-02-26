@@ -153,6 +153,10 @@ void MainThread::groundReadyRead() {
 	PacketLength length;
 	head>>length;
 	
+	while(length < ground->available()) {
+		usleep(100);
+	}
+	
 	OByteArray pack = ground->read(length);
 	
 	PacketType type;
