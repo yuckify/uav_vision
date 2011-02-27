@@ -33,7 +33,7 @@
 
 #include<Defs.h>
 #include<ImageDatabase.h>
-//#include<SqlTableModel.hpp>
+#include<LogWidget.h>
 
 using namespace std;
 
@@ -61,10 +61,12 @@ protected:
 	QLabel* cvopstat;
 	QLabel* cvidstat;
 	QLabel* apstat;
+	QLabel* ccstat;
 	
 	void setCVOperatorStatus(bool stat);
 	void setCVIdentifierStatus(bool stat);
 	void setAutoPilotStatus(bool stat);
+	void setCamControlStatus(bool stat);
 	
 	//update the gui table for the list of images
 	QTableWidget* imagetable;
@@ -89,6 +91,13 @@ protected:
 	IplImage* tchannel1;
 	IplImage* tchannel2;
 	IplImage* tchannel3;
+	
+	//display of the camera state
+	QLabel* camstatelabel;
+	
+	//log widget for logging stuff
+	LogWidget log;
+	QDockWidget* logdock;
 	
 	//button and input box so we can change the compression the plane
 	//uses in realtime
@@ -116,12 +125,15 @@ public slots:
 	//callbacks for options in "window" in the menubar
 	void window_status();
 	void window_images();
+	void window_log();
 	void status_vis(bool i);
 	void images_vis(bool i);
+	void log_vis(bool i);
 protected:
 	QMenu* menu_window;
 	QAction* action_images;
 	QAction* action_status;
+	QAction* action_log;
 	
 	QMenu* menu_file;
 	QAction* action_quit;

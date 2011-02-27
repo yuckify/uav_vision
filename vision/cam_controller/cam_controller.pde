@@ -127,6 +127,8 @@ void loop() {
         tilt.write(val);
         val = 0;
         break;
+      default:
+        break;
     }
   }
   

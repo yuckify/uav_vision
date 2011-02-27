@@ -83,6 +83,7 @@ private:
 	//to may be determined
 	OSerial initserial;
 	OTimer initsertimer;
+	OString tmpserbuf;
 	void initSerialRead();
 	
 	//this is the serial interface for talking to the camera

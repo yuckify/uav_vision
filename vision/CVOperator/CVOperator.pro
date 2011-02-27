@@ -48,7 +48,8 @@ SOURCES += main.cpp \
     ../../ooSockets/src/OFormLetter.cpp \
     ../../ooSockets/src/OByteArray.cpp \
     ../../ooSockets/src/OAddressInfo.cpp \
-    ../common/ImageDatabase.cpp
+    ../common/ImageDatabase.cpp \
+    LogWidget.cpp
 HEADERS += CVOperator.h \
     ../../ooSockets/src/OVersion.hpp \
     ../../ooSockets/src/OUdpSocket.hpp \
@@ -77,5 +78,6 @@ HEADERS += CVOperator.h \
     ../../ooSockets/src/OAddressInfo.hpp \
     ../common/Defs.h \
     ../common/ImageDatabase.h \
-    SqlTableModel.hpp
+    SqlTableModel.hpp \
+    LogWidget.h
 FORMS += CVOperator.ui

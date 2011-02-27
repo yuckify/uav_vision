@@ -166,9 +166,7 @@ void OSerial::open(OO::SerialSpeed speed,
 	fdes = CreateFile(tmpstr.c_str(), GENERIC_READ | GENERIC_WRITE, 
 		0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 #else
-	cout<<"opening" <<endl;
 	fdes = ::open(tmp.p_device.toCString(), O_RDWR | O_NONBLOCK | O_NOCTTY);
-	cout<<"opened" <<endl;
 #endif
 	
 #ifdef __windows__

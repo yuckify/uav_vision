@@ -74,7 +74,7 @@ bool OThread::execOnce() {
 #ifdef __windows__
 	if(ret == WAIT_TIMEOUT && tout != INFINITE) {
 #else
-	if(ret == 0 && tout) {
+	if(ret == 0 && tout.get()) {
 #endif
 		//call the callback for the current timer
 		deltalist[0].timer->runLoop();
@@ -163,11 +163,7 @@ bool OThread::execOnce() {
 	return true;
 }
 
-#ifdef __windows__
-void OThread::registerReadFD(HANDLE fd, OIODevice* o) {
-#else
-void OThread::registerReadFD(int fd, OIODevice* o) {
-#endif
+void OThread::registerReadFD(OO::HANDLE fd, OIODevice* o) {
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
@@ -194,11 +190,7 @@ void OThread::registerReadFD(int fd, OIODevice* o) {
 #endif
 }
 
-#ifdef __windows__
-void OThread::registerWriteFD(HANDLE fd, OIODevice *o) {
-#else
-void OThread::registerWriteFD(int fd, OIODevice *o) {
-#endif
+void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
@@ -223,11 +215,7 @@ void OThread::registerWriteFD(int fd, OIODevice *o) {
 #endif
 }
 
-#ifdef __windows__
-void OThread::registerPriorityFD(HANDLE fd, OIODevice* o) {
-#else
-void OThread::registerPriorityFD(int fd, OIODevice* o) {
-#endif
+void OThread::registerPriorityFD(OO::HANDLE fd, OIODevice* o) {
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
@@ -252,11 +240,7 @@ void OThread::registerPriorityFD(int fd, OIODevice* o) {
 #endif
 }
 
-#ifdef __windows__
-void OThread::unregisterReadFD(HANDLE fd) {
-#else
-void OThread::unregisterReadFD(int fd) {
-#endif
+void OThread::unregisterReadFD(OO::HANDLE fd) {
 	//find the fd in the map and remove it
 	unsigned length = readMap.size();
 	for(unsigned i=0; i<length; i++) {
@@ -274,11 +258,7 @@ void OThread::unregisterReadFD(int fd) {
 #endif
 }
 
-#ifdef __windows__
-void OThread::unregisterWriteFD(HANDLE fd) {
-#else
-void OThread::unregisterWriteFD(int fd) {
-#endif
+void OThread::unregisterWriteFD(OO::HANDLE fd) {
 	//find the fd in the write map and remove it
 	unsigned length = writeMap.size();
 	for(unsigned i=0; i<length; i++) {
@@ -296,11 +276,7 @@ void OThread::unregisterWriteFD(int fd) {
 #endif
 }
 
-#ifdef __windows__
-void OThread::unregisterPriorityFD(HANDLE fd) {
-#else
-void OThread::unregisterPriorityFD(int fd) {
-#endif
+void OThread::unregisterPriorityFD(OO::HANDLE fd) {
 	//find the fd in the write map and remove it
 	unsigned length = priorityMap.size();
 	for(unsigned i=0; i<length; i++) {
@@ -332,7 +308,7 @@ void OThread::registerTimer(OTimerBase* tim) {
 #ifdef __windows__
 	tout = deltalist[0].timer->period().msec();
 #else
-	if(!tout) tout.reset(new timeval);
+	if(!tout.get()) tout.reset(new timeval);
 	
 	*tout = deltalist[0].timer->period().toTimeval();
 #endif
@@ -349,7 +325,7 @@ void OThread::unregisterTimer(OTimerBase *tim) {
 #ifdef __windows__
 	if(deltalist.size() == 0) tout = INFINITE;
 #else
-	if(deltalist.size() == 0) if(tout) tout.reset();
+	if(deltalist.size() == 0) if(tout.get()) tout.reset();
 #endif
 	
 }

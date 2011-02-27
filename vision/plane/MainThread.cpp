@@ -21,8 +21,8 @@ MainThread::MainThread() :
 	}
 	
 	//setup the serial initializer
-	initsertimer.callback(bind(&MainThread::initSerialRead, this));
-	initsertimer.start(1000, OO::Once);
+//	initsertimer.callback(bind(&MainThread::initSerialRead, this));
+//	initsertimer.start(1000, OO::Once);
 	
 	OPortList ports = OSerial::portList().filterByType(OO::UsbPort);
 	if(ports.size() == 0) {
@@ -30,7 +30,8 @@ MainThread::MainThread() :
 		::exit(0);
 	}
 	cout<<"name: " <<ports[0].hwName() <<endl;
-//	initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
+	initserial.readyReadFunc(bind(&MainThread::initSerialRead, this));
+	initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
 	
 	packnum = 0;
 	//at this point we don't actually know what the autopilot and camera control
@@ -74,7 +75,6 @@ MainThread::MainThread() :
 	//setup the serial connection to the arduino, so we can send it commands
 	//to control the camera
 	arduino.reset(new OSerial());
-	
 	
 }
 
@@ -202,6 +202,11 @@ void MainThread::groundReadyRead() {
 			//send the signal to the arduino to capture an image
 			//TODO
 			
+			OByteArray msg;
+			msg<<(char)Capture;
+			
+			camcontrol.write(msg);
+			
 			//add the newly capture image to the db
 			db.add(ImageInfo("", info.yaw, info.pitch, info.roll, 
 							 info.x, info.y, info.alt, false, false));
@@ -213,6 +218,11 @@ void MainThread::groundReadyRead() {
 			break;
 		}
 	case CameraPower: {
+			cout<<"Camera Power" <<endl;
+			OByteArray msg;
+			msg<<(char)Power;
+			
+			camcontrol.write(msg);
 			
 			break;
 		}
@@ -232,21 +242,28 @@ void MainThread::groundReadyWrite() {
 }
 
 void MainThread::initSerialRead() {
-	cout<<"init serial function" <<endl;
 	
 	OByteArray data = initserial.readAll();
-	cout<<"size: " <<data.size() <<endl;
-	
 	
 	for(int i=0; i<data.size(); i++) {
-		cout<<(unsigned int)(((unsigned char*)data.data())[i]) <<" ";
-	}cout<<endl;
+		if(data.data()[i])
+			tmpserbuf.push_back(data.data()[i]);
+	}
 	
+	if(tmpserbuf.contains("camera_controller\r\n")) {
+		cout<<"Found Camera Controller" <<endl;
+		OByteArray msg;
+		msg<<'r';
+		initserial.write(msg);
+		
+		camcontrol = initserial;
+		camcontrol.readyReadFunc(bind(&MainThread::camControlRead, this));
+	}
 	
-	initsertimer.start(1000, OO::Once);
 }
 
 void MainThread::camControlRead() {
+	
 	
 }
 

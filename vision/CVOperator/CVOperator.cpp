@@ -25,10 +25,13 @@ CVOperator::CVOperator(QWidget *parent) :
 	//add actions to the window menu
 	action_status = menu_window->addAction(tr("Status"), this, SLOT(window_status()));
 	action_images = menu_window->addAction(tr("Images"), this, SLOT(window_images()));
+	action_log = menu_window->addAction(tr("Log"), this, SLOT(window_log()));
 	action_status->setCheckable(true);
 	action_images->setCheckable(true);
+	action_log->setCheckable(true);
 	action_status->setChecked(true);
 	action_images->setChecked(true);
+	action_log->setChecked(true);
 	
 	//setup the variables to be able to convert the iplimage to a qpixmap
 	iplconv_init = false;
@@ -74,6 +77,7 @@ CVOperator::CVOperator(QWidget *parent) :
 	connect(updatecomp, SIGNAL(pressed()), this, SLOT(compPressed()));
 	
 	//setup the buttons to control the camera
+	camstatelabel = new QLabel(tr("Camera: Unknown State"));
 	QPushButton* zin = new QPushButton(tr("Zoom In"));
 	QPushButton* zout = new QPushButton(tr("Zoom Out"));
 	QPushButton* pwr = new QPushButton(tr("Power"));
@@ -93,8 +97,16 @@ CVOperator::CVOperator(QWidget *parent) :
 	control2->addWidget(pwr);
 	control2->addWidget(cpt);
 	
+	//setup the log dock for displaying messages
+	logdock = new QDockWidget(tr("Log"));
+	logdock->setWidget(&log);
+	logdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
+							 Qt::BottomDockWidgetArea);
+	connect(logdock, SIGNAL(visibilityChanged(bool)), this, SLOT(log_vis(bool)));
+	this->addDockWidget(Qt::BottomDockWidgetArea, logdock);
+	
 	//setup the status dock for display status of devices and stuff
-	statusdock = new QDockWidget(tr("Status"));
+	statusdock = new QDockWidget(tr("Status/Controls"));
 	statusdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	connect(statusdock, SIGNAL(visibilityChanged(bool)), this, SLOT(status_vis(bool)));
 	this->addDockWidget(Qt::LeftDockWidgetArea, statusdock);
@@ -105,11 +117,14 @@ CVOperator::CVOperator(QWidget *parent) :
 	cvopstat = new QLabel(tr("Operator: false"));
 	cvidstat = new QLabel(tr("Identifier: false"));
 	apstat = new QLabel(tr("Auto Pilot: false"));
+	ccstat = new QLabel(tr("Cam Control: false"));
 	statlayout->addWidget(cvopstat);
 	statlayout->addWidget(cvidstat);
 	statlayout->addWidget(apstat);
+	statlayout->addWidget(ccstat);
 	statlayout->addWidget(compress);
 	statlayout->addWidget(updatecomp);
+	statlayout->addWidget(camstatelabel);
 	statlayout->addLayout(control1);
 	statlayout->addLayout(control2);
 	statlayout->addWidget(dl);
@@ -121,12 +136,12 @@ CVOperator::CVOperator(QWidget *parent) :
 	multlisten = new OUdpSocket();
 	multlisten->errorFunc(bind(&CVOperator::multError, this, _1));
 	multlisten->listenMulticast(25000, "225.0.0.37");
-	cout<<"error: " <<multlisten->error() <<" " <<multlisten->strerror() <<endl;
-	cout<<"Multicast FD: " <<multlisten->fileDescriptor() <<endl;
+	log<<error <<"error: " <<multlisten->error() <<" " <<multlisten->strerror() <<endl;
+	log<<normal <<"Multicast FD: " <<multlisten->fileDescriptor() <<endl;
 	multNotifier = new QSocketNotifier(multlisten->fileDescriptor(), 
 									   QSocketNotifier::Read, this);
 	
-	cout<<"error: " <<multlisten->error() <<endl;
+	log<<error <<"error: " <<multlisten->error() <<endl;
 	
 	connect(multNotifier, SIGNAL(activated(int)), this, SLOT(multActivated(int)));
 	
@@ -152,7 +167,7 @@ void CVOperator::compPressed() {
 		
 		conn->write(pack);
 	} else {
-		cout<<"Error: Not Connected" <<endl;
+		log<<error <<"Error: Not Connected" <<endl;
 	}
 }
 
@@ -205,6 +220,10 @@ void CVOperator::window_images() {
 	itdock->setVisible(!itdock->isVisible());
 }
 
+void CVOperator::window_log() {
+	logdock->setVisible(!logdock->isVisible());
+}
+
 void CVOperator::status_vis(bool i) {
 	action_status->setChecked(i);
 }
@@ -213,8 +232,12 @@ void CVOperator::images_vis(bool i) {
 	action_images->setChecked(i);
 }
 
+void CVOperator::log_vis(bool i) {
+	action_log->setChecked(i);
+}
+
 void CVOperator::multError(OSockError e) {
-	cout<<e.code() <<" " <<e.string() <<endl;
+	log<<error <<e.code() <<" " <<e.string() <<endl;
 }
 
 void CVOperator::connReadyRead() {
@@ -239,7 +262,6 @@ void CVOperator::connReadyRead() {
 	PacketType type;
 	pack>>type;
 	
-//	cout<<"length: " <<length <<" type: " <<(int)type <<endl;
 	
 	switch(type) {
 	case VideoFrameHeader: {
@@ -363,7 +385,51 @@ void CVOperator::connReadyRead() {
 	case ErrorMsg: {
 			OString msg;
 			pack>>msg;
-			cout<<msg <<endl;
+			log<<error <<msg <<endl;
+			break;
+		}
+	case CameraStatus: {
+			int camera_state;
+			pack>>camera_state;
+			switch(camera_state) {
+			case Camera::Ready: {
+					camstatelabel->setText(tr("Camera: Ready"));
+					break;
+				}
+			case Camera::Sleeping: {
+					camstatelabel->setText(tr("Camera: Sleeping"));
+					break;
+				}
+			case Camera::PowerOff: {
+					camstatelabel->setText(tr("Camera: Off"));
+					break;
+				}
+			case Camera::Downloading: {
+					camstatelabel->setText(tr("Camera: Downloading"));
+					break;
+				}
+			case Camera::Capturing: {
+					camstatelabel->setText(tr("Camera: Capturing"));
+					break;
+				}
+			case Camera::Zooming: {
+					camstatelabel->setText(tr("Camera: Zooming"));
+					break;
+				}
+			case Camera::Connected: {
+					this->setCamControlStatus(true);
+					break;
+				}
+			case Camera::Disconnected: {
+					this->setCamControlStatus(false);
+					break;
+				}
+			default: {
+					cerr<<"Trying to set unknown camera state." <<endl;
+					break;
+				}
+			}
+			
 			break;
 		}
 	}
@@ -400,7 +466,7 @@ void CVOperator::connActivated(int) {
 }
 
 void CVOperator::connDisconnected() {
-	cout<<"disconnected" <<endl;
+	log<<error <<"disconnected" <<endl;
 	delete connNotifier;
 	delete conn;
 	connNotifier = NULL;
@@ -437,6 +503,13 @@ void CVOperator::setAutoPilotStatus(bool stat) {
 		apstat->setText(tr("Auto Pilot: true"));
 	else
 		apstat->setText(tr("Auto Pilot: false"));
+}
+
+void CVOperator::setCamControlStatus(bool stat) {
+	if(stat)
+		ccstat->setText(tr("Cam Control: true"));
+	else
+		ccstat->setText(tr("Cam Control: false"));
 }
 
 void CVOperator::showImageDb(ImageDatabase &db) {

@@ -15,6 +15,33 @@ using boost::unique_lock;
 #define ImageSegment	uint16_t
 
 
+enum CameraControl {
+	Power			= 'p',
+	Capture			= 'c',
+	ZoomIn			= 'i',
+	ZoomOut			= 'o',
+	UsbEnable		= 'u',
+	UsbDisable		= 'b',
+	Pan				= 'q',
+	Tilt			= 'w'
+	
+	
+	
+};
+
+namespace Camera {
+enum CameraState {
+	Ready,
+	Sleeping,
+	PowerOff,
+	Downloading,
+	Capturing,
+	Zooming,
+	
+	Connected,
+	Disconnected
+};
+}
 
 /**	Packet Definitions
  *	down:	packets sent from the plane to the ground
@@ -53,7 +80,8 @@ enum Packet {
 	CameraZoomOut,
 	CameraPower,
 	CameraCapture,
-	CameraDownload
+	CameraDownload,
+	CameraStatus
 };
 
 

@@ -35,6 +35,7 @@
 #include<OIODevice.hpp>
 #include<OTime.hpp>
 #include<OTimerBase.hpp>
+#include<OO.hpp>
 
 #ifndef __windows__
 	#include<pthread.h>
@@ -113,51 +114,27 @@ public:
 	
 	///	Children of this OThread call this to register their read fds
 	///	so this OThread may do a blocked read.
-#ifdef __windows__
-	void registerReadFD(HANDLE fd, OIODevice* o);
-#else
-	void registerReadFD(int fd, OIODevice* o);
-#endif
+	void registerReadFD(OO::HANDLE fd, OIODevice* o);
 	
 	///	Children of this OThread call this to register their write fds
 	///	so this OThread may do a blocked write.
-#ifdef __windows__
-	void registerWriteFD(HANDLE fd, OIODevice* o);
-#else
-	void registerWriteFD(int fd, OIODevice* o);
-#endif
+	void registerWriteFD(OO::HANDLE fd, OIODevice* o);
 	
 	///	Children of this OThread call this to register their error fds
 	///	so this OThread may check for errors.
-#ifdef __windows__
-	void registerPriorityFD(HANDLE fd, OIODevice* o);
-#else
-	void registerPriorityFD(int fd, OIODevice* o);
-#endif
+	void registerPriorityFD(OO::HANDLE fd, OIODevice* o);
 	
 	///	Children of this OThread call this to unregister their read fds
 	///	so they may be destroyed cleanly.
-#ifdef __windows__
-	void unregisterReadFD(HANDLE fd);
-#else
-	void unregisterReadFD(int fd);
-#endif
+	void unregisterReadFD(OO::HANDLE fd);
 	
 	///	Children of this OThread call this to unregister their write fds
 	///	so their may be destroyed cleanly.
-#ifdef __windows__
-	void unregisterWriteFD(HANDLE fd);
-#else
-	void unregisterWriteFD(int fd);
-#endif
+	void unregisterWriteFD(OO::HANDLE fd);
 	
 	///	Children of this OThread call this to unregister their error fds
 	///	so they may be destroyed cleanly.
-#ifdef __windows__
-	void unregisterPriorityFD(HANDLE fd);
-#else
-	void unregisterPriorityFD(int fd);
-#endif
+	void unregisterPriorityFD(OO::HANDLE fd);
 	
 	/// A child timer of this OThread calls this function to register
 	/// itself.
