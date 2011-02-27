@@ -116,7 +116,7 @@ void MainThread::reliableFunc() {
 
 void MainThread::incommingConnection(OO::HANDLE fd) {
 	if(!ground) {
-		DebugMsg("New Ground Socket");
+		cout<<"New Ground Socket" <<endl;
 		
 		ground = new OTcpSocket(this);
 		ground->disconnectFunc(bind(&MainThread::groundDisconnected, this));

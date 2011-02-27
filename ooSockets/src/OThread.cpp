@@ -74,17 +74,17 @@ bool OThread::execOnce() {
 #ifdef __windows__
 	if(ret == WAIT_TIMEOUT && tout != INFINITE) {
 #else
-	if(ret == 0 && tout.get()) {
+	if(!ret && tout.get()) {
 #endif
-		while(true) {
-			//adjust the delta values in the list
-			for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
-				i->delta -= deltalist[0].delta;
-			}
-			
+		//adjust the delta values in the list
+		for(auto i=deltalist.end(); i>=deltalist.begin(); i--) {
+			i->delta -= deltalist[0].delta;
+		}
+		
+		bool repeat = false;
+		do {
 			//call the callback for the current timer
 			if(deltalist[0].delta.usec() <= 0) {
-				cout<<"time: " <<OTime::current().usec() <<endl;
 				deltalist[0].timer->runLoop();
 			} else {
 				break;
@@ -105,28 +105,38 @@ bool OThread::execOnce() {
 				return a.delta < b.delta;
 			});
 			
-			//check to see if we have any timers left to handle
+			if(deltalist.size()) {
+				if(deltalist[0].delta <= 0)
+					repeat = true;
+				else
+					repeat = false;
+			}
+			
+		} while(repeat);
+		
+		//check to see if we have any timers left to handle
 #ifdef __windows__
-			if(deltalist.size()) {
-				//get the current timeout
-				tout = deltalist[0].timer->period().msec();
-			} else {
-				//no timers left so set tout to INFINITE to signal the
-				//blocking function to wait infinitely
-				tout = INFINITE;
-			}
-#else
-			if(deltalist.size()) {
-				//get the current timeout
-				*tout = deltalist[0].timer->period().toTimeval();
-			} else {
-				//no timers left so get rid of the timeval structure
-				tout.reset();
-			}
-#endif
+		if(deltalist.size()) {
+			//get the current timeout
+			tout = deltalist[0].timer->period().msec();
+		} else {
+			//no timers left so set tout to INFINITE to signal the
+			//blocking function to wait infinitely
+			tout = INFINITE;
 		}
-		return true;
-	}
+#else
+		if(deltalist.size()) {
+			//get the current timeout
+			*tout = deltalist[0].delta.toTimeval();//.timer->period().toTimeval();
+		} else {
+			//no timers left so get rid of the timeval structure
+			tout.reset();
+		}
+#endif
+	}//end if(timeout)
+	
+	OTime bfd;
+	bfd.setCurrent();
 	
 #ifdef __windows__
 	//handle any HANDLEs that have activity
@@ -166,6 +176,14 @@ bool OThread::execOnce() {
 		}
 	}
 #endif
+	
+	OTime efd;
+	efd.setCurrent();
+	
+	OTime dfd = efd - bfd;
+	for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
+		i->delta -= efd;
+	}
 	
 	return true;
 }

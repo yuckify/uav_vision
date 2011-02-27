@@ -149,7 +149,7 @@ public:
 		uint32_t length = vec.size();
 		arr<<length;
 		for(unsigned int i=0; i<length; i++)
-			arr<<(T&)vec[i];
+			arr<<(T&)(vec[i]);
 	}
 	
 	template <class T, class U> void append(const map<T, U>& ma) {
