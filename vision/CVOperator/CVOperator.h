@@ -17,6 +17,7 @@
 #include<QLineEdit>
 #include<QPushButton>
 #include<QTableWidget>
+#include<QSettings>
 
 #include<iostream>
 #include<memory>
@@ -50,7 +51,9 @@ class CVOperator : public QMainWindow {
 public:
     CVOperator(QWidget *parent = 0);
     ~CVOperator();
-
+	
+	void closeEvent(QCloseEvent *);
+	
 protected:
 	//this dock widget lists the status
 	//plane to cvopertator connection
@@ -62,6 +65,10 @@ protected:
 	QLabel* cvidstat;
 	QLabel* apstat;
 	QLabel* ccstat;
+	
+	//saving and loading the state of the gui
+	void saveSettings();
+	void loadSettings();
 	
 	void setCVOperatorStatus(bool stat);
 	void setCVIdentifierStatus(bool stat);

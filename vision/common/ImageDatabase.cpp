@@ -79,10 +79,8 @@ bool ImageDatabase::load(OString fn) {
 	file.open(fn.toCString(), ios_base::in);
 	if(!file.is_open()) return false;
 	
-	for(unsigned int i=0; i<images.size(); i++) {
-		OString line;
-		getline(file, line);
-		
+	OString line;
+	while(getline(file, line), !line.isEmpty()) {
 		if(line.isEmpty()) continue;
 		
 		OStringList args = line.split(",");

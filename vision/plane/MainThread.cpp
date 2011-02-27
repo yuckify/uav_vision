@@ -68,10 +68,6 @@ MainThread::MainThread() :
 	multTimer.callback(bind(&MainThread::multTimeout, this));
 	multTimer.start(1000, OO::Repeat);
 	
-	//setup the image database, if this program is starting up from a crash
-	//load the previously saved database
-	db.load(DBFILENAME);
-	
 	//setup the serial connection to the arduino, so we can send it commands
 	//to control the camera
 	arduino.reset(new OSerial());
@@ -101,10 +97,34 @@ void MainThread::incommingConnection(OO::HANDLE fd) {
 		ground->readyWriteFunc(bind(&MainThread::groundReadyWrite, this));
 		ground->fileDescriptor(fd);
 		
+		if(db.size()) {
+			this->writeImageDb();
+		}
+		
 		if(videopacks.size()) ground->enableReadyWrite();
 		
 		multTimer.stop();
 	}
+}
+
+void MainThread::writeImageDb() {
+	OByteArray data;
+	
+	PacketLength dlen = 0;
+	PacketType dtype = ImageDetails;
+	
+	//serialize all the data into the binary container
+	data<<dlen <<dtype <<db;
+	
+	//go back to the beginning of the binary data container
+	data.seek(0, OO::beg);
+	
+	//insert the actual length of the packet
+	dlen = data.size() - sizeof(dlen);
+	data<<dlen;
+	
+	//write the data to the socket
+	ground->write(data);
 }
 
 void MainThread::videoRead() {
@@ -164,23 +184,7 @@ void MainThread::groundReadyRead() {
 	
 	switch(type) {
 	case ImageDetails: {
-			OByteArray data;
-			
-			PacketLength dlen = 0;
-			PacketType dtype = ImageDetails;
-			
-			//serialize all the data into the binary container
-			data<<dlen <<dtype <<db;
-			
-			//go back to the beginning of the binary data container
-			data.seek(0, OO::beg);
-			
-			//insert the actual length of the packet
-			dlen = data.size() - sizeof(dlen);
-			data<<dlen;
-			
-			//write the data to the socket
-			ground->write(data);
+			this->writeImageDb();
 			break;
 		}
 		case CompressionMethod: {

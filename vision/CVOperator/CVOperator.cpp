@@ -135,20 +135,40 @@ CVOperator::CVOperator(QWidget *parent) :
 	conn = NULL;
 	multlisten = new OUdpSocket();
 	multlisten->errorFunc(bind(&CVOperator::multError, this, _1));
-	multlisten->listenMulticast(25000, "225.0.0.37");
-	log<<error <<"error: " <<multlisten->error() <<" " <<multlisten->strerror() <<endl;
-	log<<normal <<"Multicast FD: " <<multlisten->fileDescriptor() <<endl;
+	if(!multlisten->listenMulticast(25000, "225.0.0.37")) {
+		log<<error <<"Error initializing socket: " <<multlisten->error()
+				<<" " <<multlisten->strerror() <<endl;
+	}
 	multNotifier = new QSocketNotifier(multlisten->fileDescriptor(), 
 									   QSocketNotifier::Read, this);
-	
-	log<<error <<"error: " <<multlisten->error() <<endl;
-	
 	connect(multNotifier, SIGNAL(activated(int)), this, SLOT(multActivated(int)));
+	
+	//load the settings for the window
+	this->loadSettings();
+	
 	
 }
 
 CVOperator::~CVOperator() {
 	delete ui;
+}
+
+void CVOperator::closeEvent(QCloseEvent *) {
+	this->saveSettings();
+}
+
+
+void CVOperator::saveSettings() {
+	//save the geometry settings
+	QSettings settings("Engineerutopia", "Vision Operator");
+	settings.setValue("main_window", this->saveGeometry());
+}
+
+void CVOperator::loadSettings() {
+	//load the geometry settings if they are available
+	QSettings settings("Engineerutopia", "Vision Operator");
+	this->restoreGeometry(settings.value("main_window", 
+										 this->saveGeometry()).toByteArray());
 }
 
 void CVOperator::compPressed() {
@@ -237,7 +257,7 @@ void CVOperator::log_vis(bool i) {
 }
 
 void CVOperator::multError(OSockError e) {
-	log<<error <<e.code() <<" " <<e.string() <<endl;
+	log<<error <<"Error: " <<e.code() <<" " <<e.string() <<endl;
 }
 
 void CVOperator::connReadyRead() {
@@ -366,11 +386,6 @@ void CVOperator::connReadyRead() {
 				
 				cvReleaseMat(&compFrame);
 				cvReleaseImage(&img);
-//				cvReleaseImage(&dframe);
-//				cvReleaseImage(&tchannel0);
-//				cvReleaseImage(&tchannel1);
-//				cvReleaseImage(&tchannel2);
-//				cvReleaseImage(&tchannel3);
 				
 			}
 			break;
@@ -461,6 +476,7 @@ void CVOperator::multActivated(int) {
 
 void CVOperator::connActivated(int) {
 	if(conn) {
+		conn->errorLoop();
 		conn->readLoop();
 	}
 }

@@ -67,6 +67,9 @@ private:
 	OTcpServer* serv;
 	void incommingConnection(OO::HANDLE fd);
 	
+	//when this function is called, the image db is send to the ground
+	void writeImageDb();
+	
 	//this socket is for receiving data from the video thread
 	VideoThread* vthread;
 	OPipe* video;
