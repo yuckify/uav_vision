@@ -20,6 +20,11 @@ MainThread::MainThread() :
 		
 	}
 	
+	//setup the reliability timer
+	reliabletimer = new OTimer(this);
+	reliabletimer->callback(bind(&MainThread::reliableFunc, this));
+	reliabletimer->start(300, OO::Repeat);
+	
 	//setup the serial initializer
 //	initsertimer.callback(bind(&MainThread::initSerialRead, this));
 //	initsertimer.start(1000, OO::Once);
@@ -39,6 +44,7 @@ MainThread::MainThread() :
 	//first we have to get some output from the port and then determine if 
 	//which one we are currently looking at
 	//the we connect to another port and rinse and repeat
+	
 	
 	
 	//setup the socket to send multicast packets to
@@ -71,7 +77,6 @@ MainThread::MainThread() :
 	//setup the serial connection to the arduino, so we can send it commands
 	//to control the camera
 	arduino.reset(new OSerial());
-	
 }
 
 void MainThread::multTimeout() {
@@ -85,6 +90,28 @@ void MainThread::multTimeout() {
 
 void MainThread::multError(OSockError e) {
 	cout<<e.code() <<" " <<e.string() <<endl;
+}
+
+void MainThread::reliableFunc() {
+	cout<<"Reliable Func" <<endl;
+	if(ground) {
+		cout<<"writing" <<endl;
+		OByteArray pack;
+		
+		PacketLength length = 0;
+		PacketType type = Alignment;
+		
+		//create most of the packet
+		pack<<length <<type;
+		pack.append((const char*)reliable_data, sizeof(reliable_data));
+		
+		//set the correct length of hte packet
+		length = pack.size() - sizeof(PacketLength);
+		pack.seek(0);
+		pack<<length;
+		
+		ground->write(pack);
+	}
 }
 
 void MainThread::incommingConnection(OO::HANDLE fd) {

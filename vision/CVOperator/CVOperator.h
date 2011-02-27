@@ -90,6 +90,12 @@ protected:
 	void connReadyRead();
 	void connDisconnected();
 	
+	//these variables are to recover is the data becomes misaligned
+	OByteArray alignbuffer;
+	int aligned;
+	int last_search;
+	int source_socket;
+	
 	//variables to convert iplimage to qpixmap
 	bool iplconv_init;
 	IplImage* dframe;

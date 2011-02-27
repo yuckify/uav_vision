@@ -78,6 +78,5 @@ HEADERS += CVOperator.h \
     ../../ooSockets/src/OAddressInfo.hpp \
     ../common/Defs.h \
     ../common/ImageDatabase.h \
-    SqlTableModel.hpp \
     LogWidget.h
 FORMS += CVOperator.ui

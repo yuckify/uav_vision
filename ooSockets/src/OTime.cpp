@@ -5,27 +5,27 @@ OTime::OTime() {
 }
 
 OTime::OTime(int msec) {
-	us = msec * 1000;
+	us = msec * (int64_t)1000;
 }
 
 OTime::OTime(struct timeval t) {
-	us = t.tv_sec + t.tv_usec * 1000000;
+	us = t.tv_sec + t.tv_usec * (int64_t)1000000;
 }
 
 void OTime::setCurrent() {
 	struct timeval tim;
 	gettimeofday(&tim, 0);
-	us = tim.tv_sec * 1000000 + tim.tv_usec;
+	us = tim.tv_sec * (int64_t)1000000 + tim.tv_usec;
 }
 
 int OTime::elapsed() const {
 	OTime elap(current().operator-(*this));
-	return elap.sec()*1000 + elap.msec();
+	return elap.sec()*(int64_t)1000 + elap.msec();
 }
 
 uint64_t OTime::uelapsed() const {
 	OTime elap(current().operator-(*this));
-	return elap.sec()*1000000 + elap.usec();
+	return elap.sec()*(int64_t)1000000 + elap.usec();
 }
 
 OTime OTime::operator-(OTime t) {
@@ -58,17 +58,17 @@ OTime OTime::current() {
 
 timeval OTime::toTimeval() {
 	timeval tmp;
-	tmp.tv_sec = us/1000000;
-	tmp.tv_usec = us%1000000;
+	tmp.tv_sec = us/(int64_t)1000000;
+	tmp.tv_usec = us%(int64_t)1000000;
 	return tmp;
 }
 
 int OTime::sec() const {
-	return us/1000000;
+	return us/(int64_t)1000000;
 }
 
 int OTime::msec() const {
-	return usec()/1000;
+	return usec()/(int64_t)1000;
 }
 
 int64_t OTime::usec() const {
@@ -76,11 +76,11 @@ int64_t OTime::usec() const {
 }
 
 void OTime::sec(int t) {
-	us = t * 1000000;
+	us = t * (int64_t)1000000;
 }
 
 void OTime::msec(int t) {
-	us = t * 1000;
+	us = t * (int64_t)1000;
 }
 
 void OTime::usec(int64_t t) {

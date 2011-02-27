@@ -13,6 +13,7 @@ OByteArray::OByteArray(const char* data, int len) :
 		mem(new OByteArrayMem(len)) {
 	
 	::memcpy(mem->bytearray.get(), data, len);
+	advanceSize(len);
 }
 
 OByteArray::OByteArray(const char *str) {
@@ -69,8 +70,9 @@ void OByteArray::append(const OString&& str) {
 
 void OByteArray::append(const char* str, int len) {
 	checkResize(len);
-	::memcpy(mem->bytearray.get() + mem->streamptr, str, len);
-	mem->sizeofdata += len;
+	::memcpy(&mem->bytearray.get()[mem->streamptr], str, len);
+	if(mem->streamptr == mem->sizeofdata)
+		mem->sizeofdata += len;
 	mem->streamptr += len;
 }
 
@@ -421,33 +423,6 @@ OList<OByteArray> OByteArray::chunk(int size) {
 
 OList<OByteArray> OByteArray::chunkWithHeader(int size, 
         function<void (OByteArray &, int, int)> cbk) {
-	
-	/*
-	//calculate the number of whole chunks, don't forget the remainder
-	int chunks = this->size() / size;
-	int remainder = this->size() % size;
-	
-	//the data we will be returning
-	OList<OByteArray> bytes;
-	
-	//copy over the whole chunks
-	for(int i=0; i<chunks; i++) {
-		OByteArray array;
-		if(cbk) cbk(array, i, size);
-		array.append(this->data()+i*size, size);
-		bytes.push_back(array);
-	}
-	
-	//append on the remainder
-	if(remainder) {
-		OByteArray array;
-		if(cbk) cbk(array, chunks, remainder);
-		array.append(this->data()+chunks*size, remainder);
-		bytes.push_back(array);
-	}
-	
-	return bytes;
-	*/
 	return chunkDataWithHeader(this->data(), this->size(), size, cbk);
 }
 
@@ -495,6 +470,26 @@ OList<OByteArray> OByteArray::chunkFileWithHeader(OString fn,
 	}
 	
 	return bytes;
+}
+
+int OByteArray::find(const OByteArray &data, int start) {
+	return find(data.constData(), data.size(), start);
+}
+
+int OByteArray::find(const char *data, int length, int start) {
+	if(start + length > this->size()) return -1;
+	
+	bool equal = false;
+	
+	//do the search for the data
+	int ending = this->size() - (start + length) + 1;
+	for(int i=start; i<ending; i++) {
+		if(!::memcmp(data, this->constData() + i, length)) {
+			return i;
+		}
+	}
+	
+	return -1;
 }
 
 int OByteArray::read(char* ptr, int len) {

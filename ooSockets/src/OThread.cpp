@@ -76,48 +76,55 @@ bool OThread::execOnce() {
 #else
 	if(ret == 0 && tout.get()) {
 #endif
-		//call the callback for the current timer
-		deltalist[0].timer->runLoop();
-		
-		//adjust the delta values in the list
-		for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
-			i->delta -= deltalist[0].delta;
-		}
-		
-		//if the timer that was just executed was a single
-		//fire timer remove it from the list
-		if(deltalist[0].timer->type() == OO::Once) {
-			deltalist.removeAt(0);
-		} else {
-			//reset the timer that timed out
-			deltalist[0].delta = deltalist[0].timer->period();
-		}
-		
-		//resort the delta list
-		sort(deltalist.begin(), deltalist.end(),
-			 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
-			return a.delta < b.delta;
-		});
-		
-		//check to see if we have any timers left to handle
+		while(true) {
+			//adjust the delta values in the list
+			for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
+				i->delta -= deltalist[0].delta;
+			}
+			
+			//call the callback for the current timer
+			if(deltalist[0].delta.usec() <= 0) {
+				cout<<"time: " <<OTime::current().usec() <<endl;
+				deltalist[0].timer->runLoop();
+			} else {
+				break;
+			}
+			
+			//if the timer that was just executed was a single
+			//fire timer remove it from the list
+			if(deltalist[0].timer->type() == OO::Once) {
+				deltalist.removeAt(0);
+			} else {
+				//reset the timer that timed out
+				deltalist[0].delta = deltalist[0].timer->period();
+			}
+			
+			//resort the delta list
+			sort(deltalist.begin(), deltalist.end(),
+				 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
+				return a.delta < b.delta;
+			});
+			
+			//check to see if we have any timers left to handle
 #ifdef __windows__
-		if(deltalist.size()) {
-			//get the current timeout
-			tout = deltalist[0].timer->period().msec();
-		} else {
-			//no timers left so set tout to INFINITE to signal the
-			//blocking function to wait infinitely
-			tout = INFINITE;
-		}
+			if(deltalist.size()) {
+				//get the current timeout
+				tout = deltalist[0].timer->period().msec();
+			} else {
+				//no timers left so set tout to INFINITE to signal the
+				//blocking function to wait infinitely
+				tout = INFINITE;
+			}
 #else
-		if(deltalist.size()) {
-			//get the current timeout
-			*tout = deltalist[0].timer->period().toTimeval();
-		} else {
-			//no timers left so get rid of the timeval structure
-			tout.reset();
-		}
+			if(deltalist.size()) {
+				//get the current timeout
+				*tout = deltalist[0].timer->period().toTimeval();
+			} else {
+				//no timers left so get rid of the timeval structure
+				tout.reset();
+			}
 #endif
+		}
 		return true;
 	}
 	

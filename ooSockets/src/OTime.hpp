@@ -100,7 +100,7 @@ public:
 	/// current OTime.
 	void setCurrent();
 	
-	/// Get tje current OTime.
+	/// Get the current OTime.
 	static OTime current();
 	
 	/// Return this instance as a OTimeval structure.

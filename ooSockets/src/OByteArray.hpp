@@ -110,9 +110,9 @@ public:
 	 *	@param data The block to data to initialize with.
 	 *	@param len The amount of data to be used in bytes.
 	*/
-	OByteArray(const char* data, int len);
-	OByteArray(const char* str);
-	OByteArray(const OString& str);
+	explicit OByteArray(const char* data, int len);
+	explicit OByteArray(const char* str);
+	explicit OByteArray(const OString& str);
 	~OByteArray();
 	
 	template <class T> OByteArray& operator&(T& item) {
@@ -324,6 +324,10 @@ public:
 										  int size, 
 										  function<void (OByteArray&, int, int)> cbk);
 	
+	
+	int find(const OByteArray& data, int start = 0);
+	
+	int find(const char* data, int length, int start = 0);
 	
 	/**	Read an arbitrary amount of data out of the OByteArray.
 	 *	@param ptr The data to be read will be copied to this pointer.

@@ -12,6 +12,10 @@ CVOperator::CVOperator(QWidget *parent) :
 	ui->setupUi(this);
 	skip = -1;
 	
+	this->aligned = true;
+	this->last_search = 0;
+	this->source_socket = false;
+	
 	//setup the File menu list
 	menu_file = new QMenu(tr("File"));
 	this->menuBar()->addMenu(menu_file);
@@ -261,17 +265,65 @@ void CVOperator::multError(OSockError e) {
 }
 
 void CVOperator::connReadyRead() {
+	OByteArray data;
+	PacketLength length;
 	
-	//read in the length field so we know how much data to read in
-	//to get the full packet
-	OByteArray data = conn->read(sizeof(PacketLength));
+	//if the binary data breaks alignment recover the alignment
+	if(!aligned) {
+		alignbuffer.append(conn->readAll());
+		
+		if(alignbuffer.find((const char*)reliable_data, sizeof(reliable_data)) != -1) {
+			//we found the alignment block
+			source_socket = false;
+			aligned = true;
+			
+			//make sure to handle the data in the align buffer before
+			//reading from the socket again
+			while(alignbuffer.size())
+				connReadyRead();
+			
+			source_socket = true;
+		} else {
+			//the alignment block was not found
+			last_search = alignbuffer.size() - sizeof(reliable_data) - 1;
+		}
+		
+	} else {
+		//read in the length field so we know how much data to read in
+		//to get the full packet
+		if(source_socket) {
+			data = conn->read(sizeof(PacketLength));
+			
+			//extract the field from the serialized data
+			length = 0;
+			data>>length;
+			
+			while(conn->available() < length) {
+				usleep(100);
+			}
+			
+		} else {
+			//if we are pulling from the alignment buffer there are two cases to take into
+			//account, pulling a full packet and pulling a partial packet
+			//if we are pulling a partial packet we are transitioning back to pulling from
+			//the socket
+			alignbuffer>>length;
+			if(length > alignbuffer.size()) {
+				data.append(alignbuffer.tellData(), alignbuffer.dataLeft());
+				data.append(conn->read(length - alignbuffer.dataLeft()));
+				alignbuffer.clear();
+			} else {
+				data.append(alignbuffer.tellData(), length);
+				alignbuffer.seek(length, OO::cur);
+			}
+		}
+	}//end if(!aligned)
 	
-	//extract the field from the serialized data
-	PacketLength length = 0;
-	data>>length;
-	
-	while(conn->available() < length) {
-		usleep(100);
+	//check to make sure the data stream is still aligned
+	if(length > 1500) {
+		log<<error <<"Data stream is misaligned" <<endl;
+		aligned = false;
+		return;
 	}
 	
 	//read in the full packet
@@ -388,6 +440,12 @@ void CVOperator::connReadyRead() {
 				cvReleaseImage(&img);
 				
 			}
+			break;
+		}
+	case Alignment: {
+			
+			
+			
 			break;
 		}
 	case ImageDetails: {
