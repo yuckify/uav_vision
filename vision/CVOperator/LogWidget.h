@@ -3,6 +3,7 @@
 
 #include <QTextEdit>
 #include<QTextStream>
+#include<QDateTime>
 
 #include<iostream>
 #include<ostream>
@@ -14,7 +15,8 @@ using namespace std;
 
 enum LogStatus {
 	error,
-	normal
+	normal,
+	high
 };
 
 class LogWidget : public QTextEdit {

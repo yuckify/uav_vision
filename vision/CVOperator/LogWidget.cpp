@@ -2,6 +2,9 @@
 
 LogWidget::LogWidget(QObject *parent) : QTextEdit((QWidget*)parent) {
 	this->setReadOnly(true);
+	
+	line.append(QDateTime::currentDateTime().toString("ddd MMM dd, h:m:s AP : "));
+	
 }
 
 void LogWidget::append(const char* str) {
@@ -52,6 +55,7 @@ void LogWidget::append(ostream& (*fp)(ostream&)) {
 	if(fp == (ostream& (*)(ostream&))endl) {
 		QTextEdit::append(line);
 		line.clear();
+		line.append(QDateTime::currentDateTime().toString("ddd MMM dd, h:m:s AP : "));
 		append(normal);
 	}
 }
@@ -67,6 +71,12 @@ void LogWidget::append(LogStatus st) {
 	case normal: {
 			QColor tcolor;
 			tcolor.setRgb(0, 0, 0);
+			this->setTextColor(tcolor);
+			break;
+		}
+	case high: {
+			QColor tcolor;
+			tcolor.setRgb(0, 0, 255);
 			this->setTextColor(tcolor);
 			break;
 		}

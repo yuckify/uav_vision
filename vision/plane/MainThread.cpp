@@ -20,11 +20,6 @@ MainThread::MainThread() :
 		
 	}
 	
-	//setup the reliability timer
-	reliabletimer = new OTimer(this);
-	reliabletimer->callback(bind(&MainThread::reliableFunc, this));
-	reliabletimer->start(300, OO::Repeat);
-	
 	//setup the serial initializer
 //	initsertimer.callback(bind(&MainThread::initSerialRead, this));
 //	initsertimer.start(1000, OO::Once);
@@ -72,7 +67,7 @@ MainThread::MainThread() :
 	//setup the timeout function so the multicast socket
 	//emits a packet every one second or so
 	multTimer.callback(bind(&MainThread::multTimeout, this));
-	multTimer.start(1000, OO::Repeat);
+	multTimer.start(100, OO::Repeat);
 	
 	//setup the serial connection to the arduino, so we can send it commands
 	//to control the camera
@@ -81,7 +76,7 @@ MainThread::MainThread() :
 
 void MainThread::multTimeout() {
 	if(!ground) {
-		DebugMsg("Emitted Multicast Discover Packet");
+//		DebugMsg("Emitted Multicast Discover Packet");
 		OByteArray pack;
 		pack<<123;
 		multping->write(pack);
@@ -90,28 +85,6 @@ void MainThread::multTimeout() {
 
 void MainThread::multError(OSockError e) {
 	cout<<e.code() <<" " <<e.string() <<endl;
-}
-
-void MainThread::reliableFunc() {
-	cout<<"Reliable Func" <<endl;
-	if(ground) {
-		cout<<"writing" <<endl;
-		OByteArray pack;
-		
-		PacketLength length = 0;
-		PacketType type = Alignment;
-		
-		//create most of the packet
-		pack<<length <<type;
-		pack.append((const char*)reliable_data, sizeof(reliable_data));
-		
-		//set the correct length of hte packet
-		length = pack.size() - sizeof(PacketLength);
-		pack.seek(0);
-		pack<<length;
-		
-		ground->write(pack);
-	}
 }
 
 void MainThread::incommingConnection(OO::HANDLE fd) {
@@ -183,13 +156,15 @@ void MainThread::videoRead() {
 
 void MainThread::groundDisconnected() {
 	if(ground) {
-		DebugMsg("Ground Disconnected");
+		cout<<"Ground Disconnected" <<endl;
 		
 		delete ground;
 		ground = NULL;
 		
 		videopacks.clear();
 		
+		multTimer.parent(this);
+		multTimer.callback(bind(&MainThread::multTimeout, this));
 		multTimer.start(1000, OO::Repeat);
 	}
 }
@@ -258,6 +233,12 @@ void MainThread::groundReadyRead() {
 			break;
 		}
 	case CameraDownload: {
+			cout<<"corrupting" <<endl;
+			
+			OByteArray data;
+			data<<65325 <<45892 <<32457 <<45789;
+			
+			ground->write(data);
 			
 			break;
 		}

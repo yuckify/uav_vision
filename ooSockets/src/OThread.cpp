@@ -135,9 +135,6 @@ bool OThread::execOnce() {
 #endif
 	}//end if(timeout)
 	
-	OTime bfd;
-	bfd.setCurrent();
-	
 #ifdef __windows__
 	//handle any HANDLEs that have activity
 	for(auto i=readfds.begin() + ret - WAIT_ABANDONED_0; i<readfds.end(); i++) {
@@ -176,14 +173,6 @@ bool OThread::execOnce() {
 		}
 	}
 #endif
-	
-	OTime efd;
-	efd.setCurrent();
-	
-	OTime dfd = efd - bfd;
-	for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
-		i->delta -= efd;
-	}
 	
 	return true;
 }
@@ -325,8 +314,7 @@ void OThread::registerTimer(OTimerBase* tim) {
 	
 	//sort the list according to the timeout period
 	sort(deltalist.begin(), deltalist.end(), 
-		 [] (const TimerDelta& a, 
-			 const TimerDelta& b) -> bool {
+		 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
 		return a.delta < b.delta;
 	});
 	
@@ -350,7 +338,7 @@ void OThread::unregisterTimer(OTimerBase *tim) {
 #ifdef __windows__
 	if(deltalist.size() == 0) tout = INFINITE;
 #else
-	if(deltalist.size() == 0) if(tout.get()) tout.reset();
+	if(deltalist.size() == 0) tout.reset();
 #endif
 	
 }

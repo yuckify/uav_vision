@@ -33,14 +33,16 @@
 
 #include <SoftwareSerial.h>
 #include <Servo.h>
+#include <MsTimer2.h>
 
-#define PWR_PIN  5
-#define CAP_PIN  4
-#define ZIN_PIN  3
-#define ZOUT_PIN 2
-#define USB_PIN  7
-#define PAN_PIN  9
-#define TILT_PIN 10
+#define PWR_PIN    5
+#define CAP_PIN    4
+#define ZIN_PIN    3
+#define ZOUT_PIN   2
+#define USB_PIN    7
+#define PAN_PIN    9
+#define STATE_PIN  0
+#define TILT_PIN   10
 
 #define PWR_CHAR  'p'
 #define CAP_CHAR  'c'
@@ -51,10 +53,20 @@
 #define PAN_CHAR  'q'
 #define TILT_CHAR 'w'
 
+enum State {
+  CameraOn,
+  CameraOff,
+  CameraSleeping,
+  Unknown
+};
+
 int val;
 bool emit;
 Servo pan;
 Servo tilt;
+int camera_state;
+int camera_override;
+int wait;
 
 void setup() {
   Serial.begin(115200);
@@ -73,12 +85,59 @@ void setup() {
   digitalWrite(ZOUT_PIN, LOW);
   digitalWrite(USB_PIN, LOW);
   
+  //setup the camera state
+  camera_state = Unknown;
+  analogReference(DEFAULT);
+  MsTimer2::set(100, readState);
+  MsTimer2::start();
+  Serial.write("$Unknown\r\n");
+  wait = 5;
+  camera_override = CameraOn;
+  
   //setup the servos so we can control the pan tilt unit
   pan.attach(PAN_PIN);
   tilt.attach(TILT_PIN);
   
   val = 0;
   emit = true;
+}
+
+void readState() {
+  int val = analogRead(STATE_PIN);
+  
+  if(val > 500 && camera_state != CameraOn) {
+     delay(2000);
+     camera_state = CameraOn;
+     Serial.write("$CameraON\r\n");
+  }
+  
+  if(camera_state == CameraOn && val < 500) {
+    Serial.write("$CameraSleeping\r\n");
+    camera_state = CameraSleeping;
+  }
+  
+  if(camera_override == CameraOff) {
+    if(val > 500 && wait > 0) {
+      wait--;
+    } else if(val > 500 && wait == 0) {
+      //turn off the camera
+      digitalWrite(PWR_PIN, HIGH);
+      delay(100);
+      digitalWrite(PWR_PIN, LOW);
+      Serial.print("$CameraOff\r\n");
+      wait = 10;
+    }
+  } else if(camera_override == CameraOn) {
+    if(val < 500 && wait > 0) {
+      wait--;
+    } else if(val < 500 && wait == 0) {
+      //wake up the camera
+      digitalWrite(PWR_PIN, HIGH);
+      delay(100);
+      digitalWrite(PWR_PIN, LOW);
+      wait = 10;
+    }
+  }
 }
 
 void loop() {
@@ -131,6 +190,8 @@ void loop() {
         break;
     }
   }
+  
+  
   
   if(emit) {
     Serial.write("$camera_controller\r\n");

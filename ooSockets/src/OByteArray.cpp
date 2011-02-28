@@ -69,8 +69,9 @@ void OByteArray::append(const OString&& str) {
 }
 
 void OByteArray::append(const char* str, int len) {
+	if(!len) return;
 	checkResize(len);
-	::memcpy(&mem->bytearray.get()[mem->streamptr], str, len);
+	::memcpy(this->tellData(), str, len);
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
 	mem->streamptr += len;
@@ -86,7 +87,7 @@ void OByteArray::append(OSerializable &obj) {
 void OByteArray::append(bool i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	bool* tmpptr = (bool*)(&mem->bytearray.get()[mem->streamptr]);
+	bool* tmpptr = (bool*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -96,7 +97,7 @@ void OByteArray::append(bool i) {
 void OByteArray::append(int8_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	int8_t* tmpptr = (int8_t*)(&mem->bytearray.get()[mem->streamptr]);
+	int8_t* tmpptr = (int8_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -106,7 +107,7 @@ void OByteArray::append(int8_t i) {
 void OByteArray::append(int16_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	int16_t* tmpptr = (int16_t*)(&mem->bytearray.get()[mem->streamptr]);
+	int16_t* tmpptr = (int16_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -116,7 +117,7 @@ void OByteArray::append(int16_t i) {
 void OByteArray::append(int32_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	int32_t* tmpptr = (int32_t*)(&mem->bytearray.get()[mem->streamptr]);
+	int32_t* tmpptr = (int32_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -126,7 +127,7 @@ void OByteArray::append(int32_t i) {
 void OByteArray::append(int64_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	int64_t* tmpptr = (int64_t*)(&mem->bytearray.get()[mem->streamptr]);
+	int64_t* tmpptr = (int64_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -136,7 +137,7 @@ void OByteArray::append(int64_t i) {
 void OByteArray::append(uint8_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	uint8_t* tmpptr = (uint8_t*)(&mem->bytearray.get()[mem->streamptr]);
+	uint8_t* tmpptr = (uint8_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -146,7 +147,7 @@ void OByteArray::append(uint8_t i) {
 void OByteArray::append(uint16_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	uint16_t* tmpptr = (uint16_t*)(&mem->bytearray.get()[mem->streamptr]);
+	uint16_t* tmpptr = (uint16_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -156,7 +157,7 @@ void OByteArray::append(uint16_t i) {
 void OByteArray::append(uint32_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	uint32_t* tmpptr = (uint32_t*)(&mem->bytearray.get()[mem->streamptr]);
+	uint32_t* tmpptr = (uint32_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
@@ -166,7 +167,7 @@ void OByteArray::append(uint32_t i) {
 void OByteArray::append(uint64_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
-	uint64_t* tmpptr = (uint64_t*)(&mem->bytearray.get()[mem->streamptr]);
+	uint64_t* tmpptr = (uint64_t*)this->tellData();
 	*tmpptr = i;
 	if(mem->streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;

@@ -53,13 +53,6 @@ private:
 		Video
 	};
 	
-	//3-5 timers per second this timer first and an alignment packet it
-	//send to the ground, if the alignment is lost on the ground this is
-	//used to regain the proper alignment, this is ward off spurious errors
-	//that may cause a missalignment
-	OTimer* reliabletimer;
-	void reliableFunc();
-	
 	//this is the multicast listener for when the
 	//ground station trys to discover the plane
 	OUdpSocket* multping;

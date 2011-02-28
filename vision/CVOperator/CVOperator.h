@@ -18,6 +18,7 @@
 #include<QPushButton>
 #include<QTableWidget>
 #include<QSettings>
+#include<QTimer>
 
 #include<iostream>
 #include<memory>
@@ -37,10 +38,6 @@
 #include<LogWidget.h>
 
 using namespace std;
-
-#define DEBUG 1
-
-void DebugMsg(OString str);
 
 namespace Ui {
     class CVOperator;
@@ -89,12 +86,18 @@ protected:
 	void multError(OSockError e);
 	void connReadyRead();
 	void connDisconnected();
+	void handlePacket(OByteArray& pack);
 	
 	//these variables are to recover is the data becomes misaligned
+	OSockAddress addr;
 	OByteArray alignbuffer;
 	int aligned;
 	int last_search;
 	int source_socket;
+	int found_align;
+	int bps;
+	QTimer* bpstimeout;
+	QLabel* bpslabel;
 	
 	//variables to convert iplimage to qpixmap
 	bool iplconv_init;
@@ -119,6 +122,9 @@ protected:
 public slots:
 	//this function is called when the button 'updatecomp' is pressed
 	void compPressed();
+	
+	//this function is call to calculate the current data rate
+	void calcData();
 	
 	//callbacks for controlling the camera, callbacks are called when
 	//the respective button is pressed

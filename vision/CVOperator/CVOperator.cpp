@@ -1,12 +1,6 @@
 #include "CVOperator.h"
 #include "ui_CVOperator.h"
 
-void DebugMsg(OString str) {
-#ifdef DEBUG
-	cout<<str <<endl;
-#endif
-}
-
 CVOperator::CVOperator(QWidget *parent) : 
 	QMainWindow(parent), ui(new Ui::CVOperator) {
 	ui->setupUi(this);
@@ -14,13 +8,21 @@ CVOperator::CVOperator(QWidget *parent) :
 	
 	this->aligned = true;
 	this->last_search = 0;
-	this->source_socket = false;
+	this->source_socket = true;
 	
 	//setup the File menu list
 	menu_file = new QMenu(tr("File"));
 	this->menuBar()->addMenu(menu_file);
 	//add actions to the file menu
 	action_quit = menu_file->addAction(tr("Quit"), this, SLOT(file_quit()));
+	
+	//the label to display the data rate
+	bpslabel = new QLabel(tr("DL: 0"));
+	bps = 0;
+	//setup timer to calculate datarate
+	bpstimeout = new QTimer;
+	connect(bpstimeout, SIGNAL(timeout()), this, SLOT(calcData()));
+	bpstimeout->start(500);
 	
 	//setup the Window menu list
 	menu_window = new QMenu(tr("Window"));
@@ -126,6 +128,7 @@ CVOperator::CVOperator(QWidget *parent) :
 	statlayout->addWidget(cvidstat);
 	statlayout->addWidget(apstat);
 	statlayout->addWidget(ccstat);
+	statlayout->addWidget(bpslabel);
 	statlayout->addWidget(compress);
 	statlayout->addWidget(updatecomp);
 	statlayout->addWidget(camstatelabel);
@@ -133,7 +136,6 @@ CVOperator::CVOperator(QWidget *parent) :
 	statlayout->addLayout(control2);
 	statlayout->addWidget(dl);
 	statusdock->setWidget(widgetwrapper);
-	
 	
 	//setup networking
 	conn = NULL;
@@ -193,6 +195,14 @@ void CVOperator::compPressed() {
 	} else {
 		log<<error <<"Error: Not Connected" <<endl;
 	}
+}
+
+void CVOperator::calcData() {
+	QString dstring(tr("DL(KB/s): "));
+	dstring.append(QString::number(bps/1000/.5));
+	
+	bpslabel->setText(dstring);
+	bps = 0;
 }
 
 void CVOperator::camera_zin() {
@@ -268,67 +278,39 @@ void CVOperator::connReadyRead() {
 	OByteArray data;
 	PacketLength length;
 	
-	//if the binary data breaks alignment recover the alignment
-	if(!aligned) {
-		alignbuffer.append(conn->readAll());
-		
-		if(alignbuffer.find((const char*)reliable_data, sizeof(reliable_data)) != -1) {
-			//we found the alignment block
-			source_socket = false;
-			aligned = true;
-			
-			//make sure to handle the data in the align buffer before
-			//reading from the socket again
-			while(alignbuffer.size())
-				connReadyRead();
-			
-			source_socket = true;
-		} else {
-			//the alignment block was not found
-			last_search = alignbuffer.size() - sizeof(reliable_data) - 1;
-		}
-		
-	} else {
+	do {
 		//read in the length field so we know how much data to read in
 		//to get the full packet
-		if(source_socket) {
-			data = conn->read(sizeof(PacketLength));
-			
-			//extract the field from the serialized data
-			length = 0;
-			data>>length;
-			
+		data = conn->read(sizeof(PacketLength));
+		bps += sizeof(PacketLength);
+		
+		//extract the field from the serialized data
+		length = 0;
+		data>>length;
+		bps += length;
+		
+		//check to make sure the data stream is still aligned
+		if(length > 1500 || length < 0) {
+			log<<error <<"Lost data stream alignment, reconnecting!" <<endl;
+			conn->close();
+			conn->connect(addr.ipString(), 25001);
+			return;
+		} else {
 			while(conn->available() < length) {
 				usleep(100);
 			}
-			
-		} else {
-			//if we are pulling from the alignment buffer there are two cases to take into
-			//account, pulling a full packet and pulling a partial packet
-			//if we are pulling a partial packet we are transitioning back to pulling from
-			//the socket
-			alignbuffer>>length;
-			if(length > alignbuffer.size()) {
-				data.append(alignbuffer.tellData(), alignbuffer.dataLeft());
-				data.append(conn->read(length - alignbuffer.dataLeft()));
-				alignbuffer.clear();
-			} else {
-				data.append(alignbuffer.tellData(), length);
-				alignbuffer.seek(length, OO::cur);
-			}
 		}
-	}//end if(!aligned)
 	
-	//check to make sure the data stream is still aligned
-	if(length > 1500) {
-		log<<error <<"Data stream is misaligned" <<endl;
-		aligned = false;
-		return;
-	}
+		//read in the full packet
+		OByteArray pack = conn->read(length);
+		
+		//handle the packet
+		handlePacket(pack);
+	} while(conn->available() > 2000);
 	
-	//read in the full packet
-	OByteArray pack = conn->read(length);
-	
+}
+
+void CVOperator::handlePacket(OByteArray &pack) {
 	//extract the packet type field so we can process is in the
 	//switch statement
 	PacketType type;
@@ -442,12 +424,6 @@ void CVOperator::connReadyRead() {
 			}
 			break;
 		}
-	case Alignment: {
-			
-			
-			
-			break;
-		}
 	case ImageDetails: {
 			pack>>db;
 			
@@ -506,19 +482,22 @@ void CVOperator::connReadyRead() {
 			break;
 		}
 	}
-	
 }
 
 void CVOperator::multActivated(int) {
 	multNotifier->setEnabled(false);
 	
-	DebugMsg("Got Multicast Packet");
-	OSockAddress addr;
+	log<<"Got Multicast Packet" <<endl;
 	
 	OByteArray data = multlisten->readAll(addr);
 	
+	if(conn) {
+		delete conn;
+		conn = NULL;
+	}
+	
 	if(!conn) {
-		DebugMsg("New GTcpConnection to Plane");
+		log<<"New Connection to Plane" <<endl;
 		setCVOperatorStatus(true);
 		
 		conn = new OTcpSocket();
@@ -540,7 +519,7 @@ void CVOperator::connActivated(int) {
 }
 
 void CVOperator::connDisconnected() {
-	log<<error <<"disconnected" <<endl;
+	log<<error <<"Connection to plane closed!" <<endl;
 	delete connNotifier;
 	delete conn;
 	connNotifier = NULL;
