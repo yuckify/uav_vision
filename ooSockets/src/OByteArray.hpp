@@ -190,7 +190,8 @@ public:
 		return *this;
 	}
 	
-	OByteArray& operator>>(bool i);
+	OByteArray& operator>>(char& i);
+	OByteArray& operator>>(bool& i);
 	OByteArray& operator>>(uint8_t& i);
 	OByteArray& operator>>(uint16_t& i);
 	OByteArray& operator>>(uint32_t& i);

@@ -61,9 +61,17 @@ void ImageDatabase::add(ImageInfo info) {
 }
 
 void ImageDatabase::save(OString fn) {
+	/*
+	cout<<"save: " <<fn <<endl;
+	bfs::path p(fn);
+	bfs::remove(p);
+	*/
 	fstream file;
 	file.open(fn.toCString(), ios_base::out);
-	if(!file.is_open()) return;
+	if(!file.is_open()) {
+		cout<<"Could not save database" <<endl;
+		return;
+	}
 	
 	for(unsigned int i=0; i<images.size(); i++) {
 		ImageInfo& info = images[i];

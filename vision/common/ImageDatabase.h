@@ -6,10 +6,20 @@
 #include<sys/types.h>
 #include<fstream>
 
+#include<boost/thread/mutex.hpp>
+#include<boost/filesystem.hpp>
+
+namespace bfs = boost::filesystem;
+
 struct ImageInfo : public OSerializable {
 	ImageInfo();
 	ImageInfo(OString name, uint16_t yaw, uint16_t pitch, uint16_t roll,
 			  uint32_t x, uint32_t y, uint32_t alt, bool download, bool ground);
+	
+	int getIndex() {
+		return i_name.substring(1, i_name.length()-4).toInt();
+	}
+	
 	
 	OString		i_name;
 	

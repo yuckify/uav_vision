@@ -131,6 +131,8 @@ public:
 			  const OPort&		port	= OPort(), 
 			  int				opts	= OO::DefaultOpts);
 	
+	void close();
+	
 	/**	Read data from the serial port.
 	  *	@param data This is where the data will be stored.
 	  *		All previous data in this container will be cleared.
@@ -149,6 +151,8 @@ public:
 	  *		representation.
 	 */
 	OByteArray readAll();
+	
+	OPort port();
 	
 	/**	Write everything in data to the serial port.
 	  *	@param data The data to be written to the port.
@@ -241,6 +245,9 @@ protected:
 	
 	//store the last error code generated
 	OSerialError serialerr;
+	
+	//the port we are connected to
+	OPort i_port;
 	
 	//the file descriptor that points to the file
 	OO::HANDLE fdes;

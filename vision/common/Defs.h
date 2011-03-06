@@ -31,6 +31,7 @@ enum CameraControl {
 
 namespace Camera {
 enum CameraState {
+	Unknown,
 	Ready,
 	Sleeping,
 	PowerOff,

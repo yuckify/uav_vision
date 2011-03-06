@@ -19,10 +19,16 @@
 #include<QTableWidget>
 #include<QSettings>
 #include<QTimer>
+#include<QFileDialog>
+#include<QFile>
+#include<QTextStream>
+#include<QSlider>
 
 #include<iostream>
 #include<memory>
 #include<sys/types.h>
+#include<assert.h>
+#include<cmath>
 
 #include<opencv/highgui.h>
 #include<opencv/cv.h>
@@ -88,6 +94,14 @@ protected:
 	void connDisconnected();
 	void handlePacket(OByteArray& pack);
 	
+	//this array and these functions are for packet switching
+	OList<function<void (OByteArray&)>> switcher;
+	void VideoFrameHeaderSwitch(OByteArray& pack);
+	void VideoFrameSegmentSwitch(OByteArray& pack);
+	void ImageDetailsSwitch(OByteArray& pack);
+	void ErrorMsgSwitch(OByteArray& pack);
+	void CameraStatusSwitch(OByteArray& pack);
+	
 	//these variables are to recover is the data becomes misaligned
 	OSockAddress addr;
 	OByteArray alignbuffer;
@@ -119,9 +133,23 @@ protected:
 	//uses in realtime
 	QLineEdit* compress;
 	QPushButton* updatecomp;
+	QSlider* zoomslider;
+	int zoompos;
 public slots:
+	//this function is called when the user releases the slider
+	//so the zoom value may be uploaded to the plane
+	void zoomSliderSet(int val);
+	
 	//this function is called when the button 'updatecomp' is pressed
 	void compPressed();
+	
+	//when the timer times out this function is called, a signal is
+	//send to the plane request to update the image db on the ground
+	void updateImageDb();
+	
+	//callbacks for the buttons on the log dock
+	void logClear();
+	void logSave();
 	
 	//this function is call to calculate the current data rate
 	void calcData();

@@ -366,10 +366,9 @@ int OUdpSocket::write(const OByteArray &data) {
 	if((ret = ::sendto(fdes, data.constData(), data.size(), 0, 
 			  sendaddr.constData(), sendaddr.size())) < 0) {
 		sigError();
-	}
-	
-	if(ret > 0) 
+	} else {
 		written = true;
+	}
 	
 	return ret;
 }
@@ -380,10 +379,9 @@ int OUdpSocket::write(const OSockAddress &addr, const OByteArray &data) {
 	if((ret = ::sendto(fdes, data.constData(), data.size(), 0, 
 			  addr.constData(), addr.size())) < 0) {
 		sigError();
-	}
-	
-	if(ret > 0) 
+	} else {
 		written = true;
+	}
 	
 	return ret;
 }

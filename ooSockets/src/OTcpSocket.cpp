@@ -54,10 +54,9 @@ int OTcpSocket::write(const OByteArray &data) {
 		sigDisconnect();
 		sigError();
 		return -1;
-	}
-	
-	if(ret > 0) 
+	} else {
 		written = true;
+	}
 	
 	return ret;
 }

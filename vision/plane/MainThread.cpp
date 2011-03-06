@@ -7,7 +7,7 @@ void DebugMsg(OString str) {
 }
 
 MainThread::MainThread() :
-	initserial(this), initsertimer(this), multTimer(this) {
+	initserial(this), initsertimer(this), multTimer(this), cameratimer(this) {
 	//setup the database files
 	if(bfs::is_directory(DBPATH)) {
 		//if the directory exists then this is not a cold start
@@ -17,12 +17,9 @@ MainThread::MainThread() :
 	} else {
 		//this is a cold start, create the necessary files
 		bfs::create_directory(DBPATH);
+		bfs::create_directory(IMAGEDIR);
 		
 	}
-	
-	//setup the serial initializer
-//	initsertimer.callback(bind(&MainThread::initSerialRead, this));
-//	initsertimer.start(1000, OO::Once);
 	
 	OPortList ports = OSerial::portList().filterByType(OO::UsbPort);
 	if(ports.size() == 0) {
@@ -33,6 +30,8 @@ MainThread::MainThread() :
 	initserial.readyReadFunc(bind(&MainThread::initSerialRead, this));
 	initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
 	
+	add_capture = false;
+	
 	packnum = 0;
 	//at this point we don't actually know what the autopilot and camera control
 	//serial ports are 
@@ -40,7 +39,8 @@ MainThread::MainThread() :
 	//which one we are currently looking at
 	//the we connect to another port and rinse and repeat
 	
-	
+	//setup the camera timer
+	cameratimer.callback(bind(&MainThread::readCameraFiles, this));
 	
 	//setup the socket to send multicast packets to
 	//discovert the groundstation
@@ -48,10 +48,11 @@ MainThread::MainThread() :
 	multping->errorFunc(bind(&MainThread::multError, this, _1));
 	multping->sendMulticast(25000, "225.0.0.37");
 	
-	//setup the server socket
 	serv = new OTcpServer(this);
 	serv->incommingFunc(bind(&MainThread::incommingConnection, this, _1));
 	serv->listen(25001);
+	
+	
 	
 	//initialize the ground socket pointer
 	ground = 0;
@@ -69,6 +70,7 @@ MainThread::MainThread() :
 	multTimer.callback(bind(&MainThread::multTimeout, this));
 	multTimer.start(100, OO::Repeat);
 	
+	
 	//setup the serial connection to the arduino, so we can send it commands
 	//to control the camera
 	arduino.reset(new OSerial());
@@ -76,7 +78,6 @@ MainThread::MainThread() :
 
 void MainThread::multTimeout() {
 	if(!ground) {
-//		DebugMsg("Emitted Multicast Discover Packet");
 		OByteArray pack;
 		pack<<123;
 		multping->write(pack);
@@ -90,11 +91,13 @@ void MainThread::multError(OSockError e) {
 void MainThread::incommingConnection(OO::HANDLE fd) {
 	if(!ground) {
 		cout<<"New Ground Socket" <<endl;
+		multTimer.stop();
 		
 		ground = new OTcpSocket(this);
 		ground->disconnectFunc(bind(&MainThread::groundDisconnected, this));
 		ground->readyReadFunc(bind(&MainThread::groundReadyRead, this));
 		ground->readyWriteFunc(bind(&MainThread::groundReadyWrite, this));
+		ground->errorFunc(bind(&MainThread::groundError, this));
 		ground->fileDescriptor(fd);
 		
 		if(db.size()) {
@@ -102,29 +105,29 @@ void MainThread::incommingConnection(OO::HANDLE fd) {
 		}
 		
 		if(videopacks.size()) ground->enableReadyWrite();
-		
-		multTimer.stop();
 	}
 }
 
 void MainThread::writeImageDb() {
-	OByteArray data;
-	
-	PacketLength dlen = 0;
-	PacketType dtype = ImageDetails;
-	
-	//serialize all the data into the binary container
-	data<<dlen <<dtype <<db;
-	
-	//go back to the beginning of the binary data container
-	data.seek(0, OO::beg);
-	
-	//insert the actual length of the packet
-	dlen = data.size() - sizeof(dlen);
-	data<<dlen;
-	
-	//write the data to the socket
-	ground->write(data);
+	if(ground) {
+		OByteArray data;
+		
+		PacketLength dlen = 0;
+		PacketType dtype = ImageDetails;
+		
+		//serialize all the data into the binary container
+		data<<dlen <<dtype <<db;
+		
+		//go back to the beginning of the binary data container
+		data.seek(0, OO::beg);
+		
+		//insert the actual length of the packet
+		dlen = data.size() - sizeof(dlen);
+		data<<dlen;
+		
+		//write the data to the socket
+		ground->write(data);
+	}
 }
 
 void MainThread::videoRead() {
@@ -165,22 +168,42 @@ void MainThread::groundDisconnected() {
 		
 		multTimer.parent(this);
 		multTimer.callback(bind(&MainThread::multTimeout, this));
-		multTimer.start(1000, OO::Repeat);
+		multTimer.start(100, OO::Repeat);
 	}
 }
 
 void MainThread::groundReadyRead() {
-	OByteArray head = ground->read(sizeof(PacketLength));
+	do {
+		OByteArray head = ground->read(sizeof(PacketLength));
+		
+		PacketLength length;
+		head>>length;
+		
+		while(length > ground->available()) {
+			usleep(100);
+		}
+		
+		
+		OByteArray pack = ground->read(length);
+		
+		handlePacket(pack);
+	} while(ground->available() > 1000);
 	
-	PacketLength length;
-	head>>length;
-	
-	while(length < ground->available()) {
-		usleep(100);
+}
+
+void MainThread::groundReadyWrite() {
+	if(videopacks.size()) {
+		OByteArray pack = videopacks.front();
+		ground->write(pack);
+		videopacks.pop_front();
 	}
-	
-	OByteArray pack = ground->read(length);
-	
+}
+
+void MainThread::groundError() {
+	cout<<"Error: " <<ground->error() <<" " <<ground->strerror() <<endl;
+}
+
+void MainThread::handlePacket(OByteArray &pack) {
 	PacketType type;
 	pack>>type;
 	
@@ -197,34 +220,40 @@ void MainThread::groundReadyRead() {
 			break;
 		}
 	case CameraZoomIn: {
+			cout<<"Zoom In" <<endl;
+			int zlen = 1;
+			pack>>zlen;
+			OString zoomstr;
+			zoomstr<<zlen;
 			
+			OByteArray msg;
+			msg<<zoomstr <<(char)ZoomIn;
+			
+			camcontrol.write(msg);
 			break;
 		}
 	case CameraZoomOut: {
+			cout<<"Zoom Out" <<endl;
+			int zlen = 1;
+			pack>>zlen;
+			OString zoomstr;
+			zoomstr<<zlen;
 			
+			OByteArray msg;
+			msg<<zoomstr <<(char)ZoomOut;
+			
+			camcontrol.write(msg);
 			break;
 		}
 	case CameraCapture: {
-			//send the signal to the arduino to capture an image
-			//TODO
-			
+			cout<<"Capture" <<endl;
 			OByteArray msg;
 			msg<<(char)Capture;
 			
 			camcontrol.write(msg);
-			
-			//add the newly capture image to the db
-			db.add(ImageInfo("", info.yaw, info.pitch, info.roll, 
-							 info.x, info.y, info.alt, false, false));
-			
-			//save the database to the hard drive so we have a backup copy
-			//of it incase this program crashes, worst case scenario
-			db.save(DBFILENAME);
-			
 			break;
 		}
 	case CameraPower: {
-			cout<<"Camera Power" <<endl;
 			OByteArray msg;
 			msg<<(char)Power;
 			
@@ -233,24 +262,67 @@ void MainThread::groundReadyRead() {
 			break;
 		}
 	case CameraDownload: {
-			cout<<"corrupting" <<endl;
+			cout<<"Download" <<endl;
+			OByteArray msg;
+			msg<<(char)UsbEnable;
 			
-			OByteArray data;
-			data<<65325 <<45892 <<32457 <<45789;
+			camcontrol.write(msg);
 			
-			ground->write(data);
+			cameratimer.start(5000);
 			
 			break;
 		}
 	}
 }
 
-void MainThread::groundReadyWrite() {
-	if(videopacks.size()) {
-		OByteArray pack = videopacks.front();
-		videopacks.pop_front();
-		ground->write(pack);
+void MainThread::readCameraFiles() {
+	bfs::path sdir("/media");
+	bfs::path fdir = find_files(sdir);
+	if(bfs::exists(fdir)) {
+		bfs::path destdir(IMAGEDIR);
+		
+		int index = 0;
+		bfs::directory_iterator end;
+		for(bfs::directory_iterator i(fdir); i!=end; i++, index++) {
+			db[index].i_name = i->filename();
+			if(!db[index].i_downloaded) {
+				//setup the destination path
+				bfs::path impath(destdir);
+				impath /= i->filename();
+				
+				//copy the file off the camera
+				bfs::copy_file(*i, impath);
+				
+				db[index].i_downloaded = true;
+			}
+		}
 	}
+	
+	db.save(DBFILENAME);
+	
+	this->writeImageDb();
+	
+	/*
+	camcontrol.close();
+	camcontrol.open(OO::O115200, camcontrol.port());
+	*/
+	
+	OByteArray msg;
+	msg<<(char)UsbDisable;
+	
+	camcontrol.write(msg);
+}
+
+bfs::path MainThread::find_files(bfs::path p) {
+	bfs::directory_iterator end;
+	for(bfs::directory_iterator i(p); i!=end; i++) {
+		if(bfs::is_directory(*i)) {
+			return find_files(*i);
+		} else if(i->string().find(".JPG")) {
+			return p;
+		}
+	}
+	return bfs::path();
 }
 
 void MainThread::initSerialRead() {
@@ -270,13 +342,93 @@ void MainThread::initSerialRead() {
 		
 		camcontrol = initserial;
 		camcontrol.readyReadFunc(bind(&MainThread::camControlRead, this));
+		camcontrol.parent(this);
 	}
 	
 }
 
 void MainThread::camControlRead() {
+	do {
+		OByteArray data = camcontrol.read(1);
+		char xfer = 0;
+		if(data.size() < 1) break;
+		data>>xfer;
+		cambuff.push_back(xfer);
+		
+		if(xfer == '\n') {
+			if(validCharacters(cambuff)) {
+				
+				int state = 0;
+				if(cambuff == "$camera_controller\r\n") {
+					cambuff.clear();
+				} else if(cambuff == "$Unknown\r\n") {
+					state = Camera::Unknown;
+					cambuff.clear();
+				} else if(cambuff == "$Ready\r\n") {
+					add_capture = false;
+					state = Camera::Ready;
+					cambuff.clear();
+				} else if(cambuff == "$CameraSleeping\r\n") {
+					state = Camera::Sleeping;
+					cambuff.clear();
+				} else if(cambuff == "$Zooming\r\n") {
+					state = Camera::Zooming;
+					cambuff.clear();
+				} else if(cambuff == "$Capturing\r\n") {
+					state = Camera::Capturing;
+					cambuff.clear();
+				} else if(cambuff == "$DoneCapturing\r\n") {
+					if(!add_capture) {
+						//add the newly capture image to the db
+						db.add(ImageInfo("", info.yaw, info.pitch, info.roll, 
+										 info.x, info.y, info.alt, false, false));
+						
+						//save the database to the hard drive so we have a backup copy
+						//of it incase this program crashes, worst case scenario
+						db.save(DBFILENAME);
+						
+						this->writeImageDb();
+						
+						add_capture = true;
+					}
+					state = Camera::Ready;
+					cambuff.clear();
+				} else if(cambuff == "$Downloading\r\n") {
+					state = Camera::Downloading;
+					cambuff.clear();
+				} else {
+					cambuff.clear();
+				}
+				
+				if(ground && state) {
+					OByteArray pack;
+					PacketType type = CameraStatus;
+					PacketLength length = 0;
+					
+					pack<<length <<type <<state;
+					
+					pack.seek(0);
+					length = pack.size() - sizeof(PacketLength);
+					pack<<length;
+					
+					ground->write(pack);
+				}
+			}
+		}
+	} while(camcontrol.available());
 	
-	
+}
+
+bool MainThread::validCharacters(OString &str) {
+	int length = str.length();
+	for(int i=0; i<length; i++) {
+		if(str[i] != '$' && (str[i] < 'a' || str[i] > 'z') &&
+		   (str[i] < 'A' || str[i] > 'Z') && str[i] != '\r' &&
+		   str[i] != '\n' && str[i] != '_') {
+			return false;
+		}
+	}
+	return true;
 }
 
 void MainThread::autoPilotRead() {

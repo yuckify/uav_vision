@@ -249,7 +249,15 @@ OByteArray& OByteArray::operator<<(OByteArray& data) {
 	return *this;
 }
 
-OByteArray& OByteArray::operator>>(bool i) {
+OByteArray& OByteArray::operator >>(char& i) {
+	makeOwner();
+	char* tmpptr = (char*)(mem->bytearray.get() + mem->streamptr);
+	mem->streamptr += sizeof(i);
+	i = *tmpptr;
+	return *this;
+}
+
+OByteArray& OByteArray::operator >>(bool& i) {
 	makeOwner();
 	bool* tmpptr = (bool*)(mem->bytearray.get() + mem->streamptr);
 	mem->streamptr += sizeof(i);

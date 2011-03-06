@@ -10,6 +10,20 @@ CVOperator::CVOperator(QWidget *parent) :
 	this->last_search = 0;
 	this->source_socket = true;
 	
+	//setup the packet switcher
+	for(int i=0; i<100; i++) switcher.push_back(NULL);
+	switcher[VideoFrameHeader] = bind(&CVOperator::VideoFrameHeaderSwitch, this, _1);
+	switcher[VideoFrameSegment] = bind(&CVOperator::VideoFrameSegmentSwitch, this, _1);
+	switcher[ImageDetails] = bind(&CVOperator::ImageDetailsSwitch, this, _1);
+	switcher[ErrorMsg] = bind(&CVOperator::ErrorMsgSwitch, this, _1);
+	switcher[CameraStatus] = bind(&CVOperator::CameraStatusSwitch, this, _1);
+	
+	//setup the image update timer
+	QTimer* iutimer = new QTimer(this);
+	connect(iutimer, SIGNAL(timeout()), this, SLOT(updateImageDb()));
+	iutimer->start(500);
+	
+	
 	//setup the File menu list
 	menu_file = new QMenu(tr("File"));
 	this->menuBar()->addMenu(menu_file);
@@ -105,11 +119,32 @@ CVOperator::CVOperator(QWidget *parent) :
 	
 	//setup the log dock for displaying messages
 	logdock = new QDockWidget(tr("Log"));
-	logdock->setWidget(&log);
+	QHBoxLayout* logbtnlayout = new QHBoxLayout;
+	QPushButton* logsavebtn = new QPushButton(tr("Save Log"));
+	QPushButton* logclearbtn = new QPushButton(tr("Clear"));
+	connect(logsavebtn, SIGNAL(pressed()), this, SLOT(logSave()));
+	connect(logclearbtn, SIGNAL(pressed()), this, SLOT(logClear()));
+	logbtnlayout->addWidget(logclearbtn);
+	logbtnlayout->addWidget(logsavebtn);
+	QVBoxLayout* logrootlayout = new QVBoxLayout;
+	logrootlayout->addLayout(logbtnlayout);
+	logrootlayout->addWidget(&log);
+	QWidget* logwrapper = new QWidget;
+	logwrapper->setLayout(logrootlayout);
+	logdock->setWidget(logwrapper);
 	logdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea |
 							 Qt::BottomDockWidgetArea);
 	connect(logdock, SIGNAL(visibilityChanged(bool)), this, SLOT(log_vis(bool)));
 	this->addDockWidget(Qt::BottomDockWidgetArea, logdock);
+	
+	//setup the zoom slider
+	zoomslider = new QSlider;
+	connect(zoomslider, SIGNAL(valueChanged(int)), this, SLOT(zoomSliderSet(int)));
+	zoomslider->setOrientation(Qt::Horizontal);
+	zoomslider->setTracking(false);
+	zoomslider->setRange(0, 8);
+//	zoomslider->setSingleStep(100);
+	this->zoompos = 0;
 	
 	//setup the status dock for display status of devices and stuff
 	statusdock = new QDockWidget(tr("Status/Controls"));
@@ -132,12 +167,14 @@ CVOperator::CVOperator(QWidget *parent) :
 	statlayout->addWidget(compress);
 	statlayout->addWidget(updatecomp);
 	statlayout->addWidget(camstatelabel);
+	statlayout->addWidget(zoomslider);
 	statlayout->addLayout(control1);
 	statlayout->addLayout(control2);
 	statlayout->addWidget(dl);
 	statusdock->setWidget(widgetwrapper);
 	
 	//setup networking
+	connNotifier = NULL;
 	conn = NULL;
 	multlisten = new OUdpSocket();
 	multlisten->errorFunc(bind(&CVOperator::multError, this, _1));
@@ -164,6 +201,25 @@ void CVOperator::closeEvent(QCloseEvent *) {
 }
 
 
+void CVOperator::logClear() {
+	log.clear();
+}
+
+void CVOperator::logSave() {
+	QString fn = QFileDialog::getSaveFileName(this, tr("Save Log"), "log.txt", 
+											  tr("Text File (*.txt)"));
+	
+	if(fn.isEmpty()) return;
+	
+	QFile savef(fn);
+	if(!savef.open(QIODevice::ReadWrite | QIODevice::Text))
+		return;
+	
+	QString logtext = log.document()->toPlainText();
+	QTextStream stream(&savef);
+	stream<<logtext;
+}
+
 void CVOperator::saveSettings() {
 	//save the geometry settings
 	QSettings settings("Engineerutopia", "Vision Operator");
@@ -175,6 +231,34 @@ void CVOperator::loadSettings() {
 	QSettings settings("Engineerutopia", "Vision Operator");
 	this->restoreGeometry(settings.value("main_window", 
 										 this->saveGeometry()).toByteArray());
+}
+
+void CVOperator::zoomSliderSet(int val) {
+	if(conn) {
+		OByteArray pack;
+		PacketLength length;
+		PacketType type;
+		
+		int delta = this->zoompos - val;
+		if(val == 0) {
+			type = CameraZoomOut;
+			if(delta < 0) delta *= -1;
+			delta += 2;
+		} else if(delta > 0) {
+			type = CameraZoomOut;
+		} else if(delta < 0) {
+			type = CameraZoomIn;
+			delta *= -1;
+		}
+		
+		pack<<length <<type <<delta;
+		pack.seek(0);
+		length = pack.size() - sizeof(PacketLength);
+		pack<<length;
+		
+		conn->write(pack);
+	}
+	this->zoompos = val;
 }
 
 void CVOperator::compPressed() {
@@ -197,6 +281,10 @@ void CVOperator::compPressed() {
 	}
 }
 
+void CVOperator::updateImageDb() {
+	this->smallMsg(ImageDetails);
+}
+
 void CVOperator::calcData() {
 	QString dstring(tr("DL(KB/s): "));
 	dstring.append(QString::number(bps/1000/.5));
@@ -206,11 +294,44 @@ void CVOperator::calcData() {
 }
 
 void CVOperator::camera_zin() {
-	smallMsg(CameraZoomIn);
+	if(conn) {
+		OByteArray pack;
+		PacketType type = CameraZoomIn;
+		PacketLength length = 0;
+		int zoomlen = 1;
+		
+		pack<<length <<type <<zoomlen;
+		
+		pack.seek(0);
+		length = pack.size() - sizeof(PacketLength);
+		pack<<length;
+		
+		conn->write(pack);
+	}
+	
+	zoomslider->setSliderPosition(zoomslider->sliderPosition()+1);
+	this->zoompos = zoomslider->sliderPosition();
 }
 
 void CVOperator::camera_zout() {
-	smallMsg(CameraZoomOut);
+	if(conn) {
+		OByteArray pack;
+		PacketType type = CameraZoomOut;
+		PacketLength length = 0;
+		int zoomlen = 1;
+		
+		pack<<length <<type <<zoomlen;
+		
+		pack.seek(0);
+		length = pack.size() - sizeof(PacketLength);
+		pack<<length;
+		
+		conn->write(pack);
+	}
+	
+	if(zoomslider->sliderPosition() > 0)
+		zoomslider->setSliderPosition(zoomslider->sliderPosition()-1);
+	this->zoompos = zoomslider->sliderPosition();
 }
 
 void CVOperator::camera_capture() {
@@ -293,7 +414,7 @@ void CVOperator::connReadyRead() {
 		if(length > 1500 || length < 0) {
 			log<<error <<"Lost data stream alignment, reconnecting!" <<endl;
 			conn->close();
-			conn->connect(addr.ipString(), 25001);
+//			conn->connect(addr.ipString(), 25001);
 			return;
 		} else {
 			while(conn->available() < length) {
@@ -316,169 +437,173 @@ void CVOperator::handlePacket(OByteArray &pack) {
 	PacketType type;
 	pack>>type;
 	
+	//if a function was not set for the specified type throw an error
+#ifndef NDEBUG
+	if(!switcher[type]) {
+		cout<<"Type: " <<(int)type <<endl;
+	}
+#endif
+	assert(switcher[type]);
 	
-	switch(type) {
-	case VideoFrameHeader: {
-			uint32_t imagecount;
-			uint16_t maxlength;
-			uint32_t step;
-			int32_t rows;
-			int32_t cols;
-			int32_t type;
+	//call the handler function for the type of the received packet
+	switcher[type](pack);
+}
+
+void CVOperator::VideoFrameHeaderSwitch(OByteArray& pack) {
+	uint32_t imagecount;
+	uint16_t maxlength;
+	uint32_t step;
+	int32_t rows;
+	int32_t cols;
+	int32_t type;
+	
+	pack>>imagecount >>segsPerFrame >>align >>step >>rows >>cols 
+			>>type;
+	
+	currentIndex = imagecount;
+	
+	compFrame = cvCreateMat(rows, cols, type);
+	
+	compFrame->step = step;
+	compFrame->type = type;
+}
+
+void CVOperator::VideoFrameSegmentSwitch(OByteArray& pack) {
+	if(skip == currentIndex) {
+		return;
+	}
+	
+	uint16_t segindex;
+	uint32_t imagecount;
+	uint16_t maxlength;
+	
+	//deserialize the size fields for this image segment
+	pack>>segindex >>imagecount >>maxlength;
+	
+	uchar* ptr;
+	try {
+		//get a pointer to the data section of the opencv structure
+		ptr = cvPtr1D(compFrame,0);	//ptr to the image matrix in memory
+	} catch(exception& e) {
+		skip = currentIndex;
+		return;
+	}
+	
+	//deserialize the image data
+	pack.read((char*)ptr + segindex*align, maxlength);
+	
+	//check if this is the last segment, if so display the image
+	if((segsPerFrame - 1) == segindex) {
+		
+		IplImage* img = cvDecodeImage(compFrame);
+		
+		if(img == NULL) return;
+		
+		
+		CvSize frame_size;
+		frame_size.height = img->height;
+		frame_size.width = img->width;
+		
+		if(!iplconv_init || dframe->width != img->width || 
+				dframe->height != img->height) {
 			
-			pack>>imagecount >>segsPerFrame >>align >>step >>rows >>cols 
-					>>type;
-			
-			currentIndex = imagecount;
-			
-			compFrame = cvCreateMat(rows, cols, type);
-			
-			compFrame->step = step;
-			compFrame->type = type;
-			
-			break;
-		}
-	case VideoFrameSegment: {
-			if(skip == currentIndex) {
-				return;
+			if(dframe) {
+				cvReleaseImage(&dframe);
+				cvReleaseImage(&tchannel0);
+				cvReleaseImage(&tchannel1);
+				cvReleaseImage(&tchannel2);
+				cvReleaseImage(&tchannel3);
 			}
 			
-			uint16_t segindex;
-			uint32_t imagecount;
-			uint16_t maxlength;
+			dframe = cvCreateImage(frame_size, img->depth, 4);
 			
-			//deserialize the size fields for this image segment
-			pack>>segindex >>imagecount >>maxlength;
+			// the individual channels for the IplImage
+			tchannel0 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+			tchannel1 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+			tchannel2 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
+			tchannel3 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
 			
-			uchar* ptr;
-			try {
-				//get a pointer to the data section of the opencv structure
-				ptr = cvPtr1D(compFrame,0);	//ptr to the image matrix in memory
-			} catch(exception& e) {
-				skip = currentIndex;
-				return;
-			}
-			
-			//deserialize the image data
-			pack.read((char*)ptr + segindex*align, maxlength);
-			
-			//check if this is the last segment, if so display the image
-			if((segsPerFrame - 1) == segindex) {
-				
-				IplImage* img = cvDecodeImage(compFrame);
-				
-				if(img == NULL) return;
-				
-				
-				CvSize frame_size;
-				frame_size.height = img->height;
-				frame_size.width = img->width;
-				
-				if(!iplconv_init || dframe->width != img->width || 
-						dframe->height != img->height) {
-					
-					if(dframe) {
-						cvReleaseImage(&dframe);
-						cvReleaseImage(&tchannel0);
-						cvReleaseImage(&tchannel1);
-						cvReleaseImage(&tchannel2);
-						cvReleaseImage(&tchannel3);
-					}
-					
-					dframe = cvCreateImage(frame_size, img->depth, 4);
-					
-					// the individual channels for the IplImage
-					tchannel0 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-					tchannel1 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-					tchannel2 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-					tchannel3 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-					
-					iplconv_init = true;
-				}
-				
-				// set all elements in tchannel0 (alpha channel) to 255
-				cvSet(tchannel0,cvScalarAll(255),0);
-				
-				// with img being the captured frame (3 channel RGB)
-				// and dframe the frame to be displayed
-				cvSplit(img, tchannel1, tchannel2, tchannel3, NULL);
-				cvMerge(tchannel1, tchannel2, tchannel3, tchannel0, dframe);
-				
-				// point to the image data stored in the IplImage*
-				const unsigned char * data = (unsigned char *)(dframe->imageData);
-				
-				// read other parameters in local variables
-				int width = dframe->width;
-				int height = dframe->height;
-				int bytesPerLine = dframe->widthStep;
-				
-				disp->clear();
-				
-				// imageframe is my QLabel object
-				QImage qimage = QImage(data, width, height, bytesPerLine, QImage::Format_RGB32 );
-				disp->setPixmap(QPixmap::fromImage(qimage, 0));
-				
-				cvReleaseMat(&compFrame);
-				cvReleaseImage(&img);
-				
-			}
+			iplconv_init = true;
+		}
+		
+		// set all elements in tchannel0 (alpha channel) to 255
+		cvSet(tchannel0,cvScalarAll(255),0);
+		
+		// with img being the captured frame (3 channel RGB)
+		// and dframe the frame to be displayed
+		cvSplit(img, tchannel1, tchannel2, tchannel3, NULL);
+		cvMerge(tchannel1, tchannel2, tchannel3, tchannel0, dframe);
+		
+		// point to the image data stored in the IplImage*
+		const unsigned char * data = (unsigned char *)(dframe->imageData);
+		
+		// read other parameters in local variables
+		int width = dframe->width;
+		int height = dframe->height;
+		int bytesPerLine = dframe->widthStep;
+		
+		disp->clear();
+		
+		// imageframe is my QLabel object
+		QImage qimage = QImage(data, width, height, bytesPerLine, QImage::Format_RGB32 );
+		disp->setPixmap(QPixmap::fromImage(qimage, 0));
+		
+		cvReleaseMat(&compFrame);
+		cvReleaseImage(&img);
+		
+	}
+}
+
+void CVOperator::ImageDetailsSwitch(OByteArray& pack) {
+	pack>>db;
+	
+	showImageDb(db);
+}
+
+void CVOperator::ErrorMsgSwitch(OByteArray& pack) {
+	OString msg;
+	pack>>msg;
+	log<<error <<msg <<endl;
+}
+
+void CVOperator::CameraStatusSwitch(OByteArray& pack) {
+	int camera_state;
+	pack>>camera_state;
+	switch(camera_state) {
+	case Camera::Ready: {
+			camstatelabel->setText(tr("Camera: Ready"));
 			break;
 		}
-	case ImageDetails: {
-			pack>>db;
-			
-			showImageDb(db);
-			
+	case Camera::Sleeping: {
+			camstatelabel->setText(tr("Camera: Sleeping"));
 			break;
 		}
-	case ErrorMsg: {
-			OString msg;
-			pack>>msg;
-			log<<error <<msg <<endl;
+	case Camera::PowerOff: {
+			camstatelabel->setText(tr("Camera: Off"));
 			break;
 		}
-	case CameraStatus: {
-			int camera_state;
-			pack>>camera_state;
-			switch(camera_state) {
-			case Camera::Ready: {
-					camstatelabel->setText(tr("Camera: Ready"));
-					break;
-				}
-			case Camera::Sleeping: {
-					camstatelabel->setText(tr("Camera: Sleeping"));
-					break;
-				}
-			case Camera::PowerOff: {
-					camstatelabel->setText(tr("Camera: Off"));
-					break;
-				}
-			case Camera::Downloading: {
-					camstatelabel->setText(tr("Camera: Downloading"));
-					break;
-				}
-			case Camera::Capturing: {
-					camstatelabel->setText(tr("Camera: Capturing"));
-					break;
-				}
-			case Camera::Zooming: {
-					camstatelabel->setText(tr("Camera: Zooming"));
-					break;
-				}
-			case Camera::Connected: {
-					this->setCamControlStatus(true);
-					break;
-				}
-			case Camera::Disconnected: {
-					this->setCamControlStatus(false);
-					break;
-				}
-			default: {
-					cerr<<"Trying to set unknown camera state." <<endl;
-					break;
-				}
-			}
-			
+	case Camera::Downloading: {
+			camstatelabel->setText(tr("Camera: Downloading"));
+			break;
+		}
+	case Camera::Capturing: {
+			camstatelabel->setText(tr("Camera: Capturing"));
+			break;
+		}
+	case Camera::Zooming: {
+			camstatelabel->setText(tr("Camera: Zooming"));
+			break;
+		}
+	case Camera::Connected: {
+			this->setCamControlStatus(true);
+			break;
+		}
+	case Camera::Disconnected: {
+			this->setCamControlStatus(false);
+			break;
+		}
+	default: {
+			log<<error <<"Trying to set unknown camera state \"" <<(int)camera_state <<"\"" <<endl;
 			break;
 		}
 	}
@@ -491,17 +616,21 @@ void CVOperator::multActivated(int) {
 	
 	OByteArray data = multlisten->readAll(addr);
 	
+	/*
 	if(conn) {
 		delete conn;
 		conn = NULL;
 	}
+	*/
 	
 	if(!conn) {
 		log<<"New Connection to Plane" <<endl;
 		setCVOperatorStatus(true);
 		
 		conn = new OTcpSocket();
-		conn->connect(addr.ipString(), 25001);
+		addr.port(25001);
+		conn->connect(addr);
+//		conn->connect(addr.ipString(), 25001);
 		conn->readyReadFunc(bind(&CVOperator::connReadyRead, this));
 		conn->disconnectFunc(bind(&CVOperator::connDisconnected, this));
 		connNotifier = new QSocketNotifier(conn->fileDescriptor(),
@@ -520,6 +649,7 @@ void CVOperator::connActivated(int) {
 
 void CVOperator::connDisconnected() {
 	log<<error <<"Connection to plane closed!" <<endl;
+	
 	delete connNotifier;
 	delete conn;
 	connNotifier = NULL;
@@ -580,7 +710,5 @@ void CVOperator::showImageDb(ImageDatabase &db) {
 		imagetable->setItem(i, 6, new QTableWidgetItem(str.setNum(db[i].i_x)));
 		imagetable->setItem(i, 7, new QTableWidgetItem(str.setNum(db[i].i_y)));
 		imagetable->setItem(i, 8, new QTableWidgetItem(str.setNum(db[i].i_alt)));
-		
 	}
-	
 }

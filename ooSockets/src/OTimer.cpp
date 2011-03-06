@@ -15,7 +15,6 @@ OThread* OTimer::parent() {
 void OTimer::parent(OThread *p) {
 	unregisterTimer();
 	par = p;
-	registerTimer();
 }
 
 void OTimer::start(int ms, OO::TimerType t) {

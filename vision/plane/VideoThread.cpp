@@ -15,7 +15,7 @@ VideoThread::VideoThread(bst::mutex &mut, deque<OByteArray> &pkts, OPipe &p, Pla
 }
 
 void VideoThread::run() {
-	CvCapture* capture = cvCaptureFromCAM(0);
+	CvCapture* capture = cvCaptureFromCAM(-1);
 	IplImage* frame;
 	int p[3];
 	p[0] = CV_IMWRITE_JPEG_QUALITY;
@@ -52,7 +52,7 @@ void VideoThread::run() {
 			pipe->write(data);
 			
 			compext = ".jpeg";
-			temp=cvEncodeImage(compext.toCString(), frame, p); //Encode image as Jpeg
+			temp = cvEncodeImage(compext.toCString(), frame, p); //Encode image as Jpeg
 			
 		}
 		comptex.unlock();

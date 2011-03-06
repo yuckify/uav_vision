@@ -34,6 +34,7 @@ namespace bst = boost;
 
 #define DBPATH		"db"
 #define DBFILENAME DBPATH"/imagedb.txt"
+#define IMAGEDIR	DBPATH"/images"
 
 namespace bfs = boost::filesystem;
 
@@ -80,6 +81,19 @@ private:
 	void groundDisconnected();
 	void groundReadyRead();
 	void groundReadyWrite();
+	void groundError();
+	void handlePacket(OByteArray& pack);
+	
+	
+	//this structure and these functions are for packet switching
+	OList<void (*)(OByteArray&)> switcher;
+	
+	//this timer executes after about 1/2 second when the camera
+	//mounts as a flash drive
+	OTimer cameratimer;
+	void readCameraFiles();
+	bfs::path find_files(bfs::path p);
+	
 	
 	//this serial thing is used to initialliy read from the serial
 	//ports, the data is then parsed so which device we are talking
@@ -93,7 +107,9 @@ private:
 	//controller
 	OSerial camcontrol;
 	OString cambuff;
+	bool add_capture;
 	void camControlRead();
+	bool validCharacters(OString& str);
 	
 	//this is the serial interface for receiving the data from the
 	//autopilot which will be forwarded to the ground station

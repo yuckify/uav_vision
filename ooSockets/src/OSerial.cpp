@@ -142,6 +142,8 @@ void OSerial::open(OO::SerialSpeed speed,
 				   int opts) {
 	errno = 0;
 	
+	i_port = port;
+	
 	OPort tmp;
 	//if the user opted to used the first available port
 	//then get the list of ports
@@ -277,8 +279,16 @@ OByteArray OSerial::read(int len) {
 	return ba;
 }
 
+void OSerial::close() {
+	::close(fdes);
+}
+
 OByteArray OSerial::readAll() {
 	return read(available());
+}
+
+OPort OSerial::port() {
+	return i_port;
 }
 
 void OSerial::write(OByteArray& data) {
