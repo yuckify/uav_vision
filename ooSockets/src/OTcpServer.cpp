@@ -8,9 +8,8 @@ bool OTcpServer::listen(const OAddressInfo& info) {
 	return OSocket::listen(info);
 }
 
-bool OTcpServer::listen(const OSockAddress&	sock, 
-						OO::SockType		type) {
-	return OSocket::listen(sock, type);
+bool OTcpServer::listen(const OSockAddress&	sock) {
+	return OSocket::listen(sock, OO::Tcp);
 }
 
 bool OTcpServer::listen(int	port, 

@@ -49,7 +49,8 @@ SOURCES += main.cpp \
     ../../ooSockets/src/OByteArray.cpp \
     ../../ooSockets/src/OAddressInfo.cpp \
     ../common/ImageDatabase.cpp \
-    LogWidget.cpp
+    LogWidget.cpp \
+    ../../ooSockets/src/ODSMux.cpp
 HEADERS += CVOperator.h \
     ../../ooSockets/src/OVersion.hpp \
     ../../ooSockets/src/OUdpSocket.hpp \
@@ -78,5 +79,6 @@ HEADERS += CVOperator.h \
     ../../ooSockets/src/OAddressInfo.hpp \
     ../common/Defs.h \
     ../common/ImageDatabase.h \
-    LogWidget.h
+    LogWidget.h \
+    ../../ooSockets/src/ODSMux.h
 FORMS += CVOperator.ui

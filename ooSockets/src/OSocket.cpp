@@ -38,7 +38,7 @@ void OSocket::close() {
 	if(fdes) {
 		shutdown(fdes, SHUT_RDWR);
 		_close(fdes);
-		unregisterFD();
+//		unregisterFD();
 		disableReadyWrite();
 		fdes = 0;
 		conn = false;
@@ -371,6 +371,10 @@ OAddressList OSocket::getAddressInfo(OString addr,
 
 OThread* OSocket::parent() {
 	return par;
+}
+
+void OSocket::setParent(OThread *p) {
+	registerFD();
 }
 
 OByteArray OSocket::magicPacket(OMacAddress mac) {

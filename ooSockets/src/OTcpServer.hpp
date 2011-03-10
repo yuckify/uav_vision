@@ -42,8 +42,7 @@ public:
 	bool listen(const OAddressInfo& info);
 	
 	/// Setup to wait for someone to open a connection.
-	bool listen(const OSockAddress&	sock, 
-				OO::SockType		type);
+	bool listen(const OSockAddress&	sock);
 	
 	/// Set to wait for someone to open a connection.
 	bool listen(int				port, 
