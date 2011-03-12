@@ -2,21 +2,24 @@
 
 OByteArray::OByteArray(int n) : 
 		mem(new OByteArrayMem(n)) {
-	
+	streamptr = 0;
 }
 
 OByteArray::OByteArray(const OByteArray& old) {
 	mem = old.mem;
+	streamptr = old.streamptr;
 }
 
 OByteArray::OByteArray(const char* data, int len) : 
 		mem(new OByteArrayMem(len)) {
+	streamptr = 0;
 	
 	::memcpy(mem->bytearray.get(), data, len);
 	advanceSize(len);
 }
 
 OByteArray::OByteArray(const char *str) {
+	streamptr = 0;
 	int strlen = 0;
 	const char* strptr = str;
 	while(*strptr++)
@@ -29,6 +32,8 @@ OByteArray::OByteArray(const char *str) {
 }
 
 OByteArray::OByteArray(const OString &str) {
+	streamptr = 0;
+	
 	mem.reset(new OByteArrayMem(str.length()+1));
 	::memcpy(mem->bytearray.get(), str.toCString(), str.length()+1);
 	
@@ -72,9 +77,9 @@ void OByteArray::append(const char* str, int len) {
 	if(!len) return;
 	checkResize(len);
 	::memcpy(this->tellData(), str, len);
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(OSerializable &obj) {
@@ -89,9 +94,9 @@ void OByteArray::append(bool i) {
 	checkResize(len);
 	bool* tmpptr = (bool*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(int8_t i) {
@@ -99,9 +104,9 @@ void OByteArray::append(int8_t i) {
 	checkResize(len);
 	int8_t* tmpptr = (int8_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(int16_t i) {
@@ -109,9 +114,9 @@ void OByteArray::append(int16_t i) {
 	checkResize(len);
 	int16_t* tmpptr = (int16_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(int32_t i) {
@@ -119,9 +124,9 @@ void OByteArray::append(int32_t i) {
 	checkResize(len);
 	int32_t* tmpptr = (int32_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(int64_t i) {
@@ -129,9 +134,9 @@ void OByteArray::append(int64_t i) {
 	checkResize(len);
 	int64_t* tmpptr = (int64_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(uint8_t i) {
@@ -139,9 +144,9 @@ void OByteArray::append(uint8_t i) {
 	checkResize(len);
 	uint8_t* tmpptr = (uint8_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(uint16_t i) {
@@ -149,9 +154,9 @@ void OByteArray::append(uint16_t i) {
 	checkResize(len);
 	uint16_t* tmpptr = (uint16_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(uint32_t i) {
@@ -159,9 +164,9 @@ void OByteArray::append(uint32_t i) {
 	checkResize(len);
 	uint32_t* tmpptr = (uint32_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 void OByteArray::append(uint64_t i) {
@@ -169,9 +174,9 @@ void OByteArray::append(uint64_t i) {
 	checkResize(len);
 	uint64_t* tmpptr = (uint64_t*)this->tellData();
 	*tmpptr = i;
-	if(mem->streamptr == mem->sizeofdata)
+	if(streamptr == mem->sizeofdata)
 		mem->sizeofdata += len;
-	mem->streamptr += len;
+	streamptr += len;
 }
 
 OByteArray& OByteArray::operator<<(bool i) {
@@ -250,88 +255,76 @@ OByteArray& OByteArray::operator<<(OByteArray& data) {
 }
 
 OByteArray& OByteArray::operator >>(char& i) {
-	makeOwner();
-	char* tmpptr = (char*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	char* tmpptr = (char*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator >>(bool& i) {
-	makeOwner();
-	bool* tmpptr = (bool*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	bool* tmpptr = (bool*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(uint8_t& i) {
-	makeOwner();
-	uint8_t* tmpptr = (uint8_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	uint8_t* tmpptr = (uint8_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(uint16_t& i) {
-	makeOwner();
-	uint16_t* tmpptr = (uint16_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	uint16_t* tmpptr = (uint16_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(uint32_t& i) {
-	makeOwner();
-	uint32_t* tmpptr = (uint32_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	uint32_t* tmpptr = (uint32_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(uint64_t& i) {
-	makeOwner();
-	uint64_t* tmpptr = (uint64_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	uint64_t* tmpptr = (uint64_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(int8_t& i) {
-	makeOwner();
-	int8_t* tmpptr = (int8_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	int8_t* tmpptr = (int8_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(int16_t& i) {
-	makeOwner();
-	int16_t* tmpptr = (int16_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	int16_t* tmpptr = (int16_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(int32_t& i) {
-	makeOwner();
-	int32_t* tmpptr = (int32_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	int32_t* tmpptr = (int32_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(int64_t& i) {
-	makeOwner();
-	int64_t* tmpptr = (int64_t*)(mem->bytearray.get() + mem->streamptr);
-	mem->streamptr += sizeof(i);
+	int64_t* tmpptr = (int64_t*)(mem->bytearray.get() + streamptr);
+	streamptr += sizeof(i);
 	i = *tmpptr;
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(OSerializable& obj) {
-	makeOwner();
-	
 	mem->dir = OO::Output;
 	
 	obj.serialize(*this, mem->dir);
@@ -339,10 +332,9 @@ OByteArray& OByteArray::operator>>(OSerializable& obj) {
 }
 
 OByteArray& OByteArray::operator>>(OString& str) {
-	makeOwner();
-	OString tmpstr(mem->bytearray.get() + mem->streamptr);
+	OString tmpstr(mem->bytearray.get() + streamptr);
 	
-	while(mem->bytearray.get()[mem->streamptr++]) {}
+	while(mem->bytearray.get()[streamptr++]) {}
 	str = tmpstr;
 	return *this;
 }
@@ -502,7 +494,6 @@ int OByteArray::find(const char *data, int length, int start) {
 }
 
 int OByteArray::read(char* ptr, int len) {
-	makeOwner();
 	int readlen = 0;
 	if(len > dataLeft()) readlen = dataLeft();
 	else readlen = len;
@@ -520,31 +511,32 @@ int OByteArray::checksum() const {
 }
 
 int OByteArray::tell() const {
-	return mem->streamptr;
+	return streamptr;
 }
 
 void OByteArray::seek(int pos, OO::IOBase base) {
-	makeOwner();
-	
 	switch(base) {
 		case OO::beg: {
-			if(pos < 0)		mem->streamptr = 0;
-			else			mem->streamptr = pos;
+			if(pos < 0)		streamptr = 0;
+			else			streamptr = pos;
 			break;
 		}
 		case OO::end: {
-			int newpos = pos + mem->sizeofdata + mem->streamptr;
-			if(newpos < 0)	mem->streamptr = 0;
-			else			mem->streamptr = newpos;
+			int newpos = pos + mem->sizeofdata + streamptr;
+			if(newpos < 0)	streamptr = 0;
+			else			streamptr = newpos;
 			break;
 		}
 		case OO::cur: {
-			int newpos = pos + mem->streamptr;
-			if(newpos < 0)	mem->streamptr = 0;
-			else			mem->streamptr = newpos;
+			int newpos = pos + streamptr;
+			if(newpos < 0)	streamptr = 0;
+			else			streamptr = newpos;
 			break;
 		}
 	}
+	
+	if(streamptr > mem->sizeofdata) streamptr = mem->sizeofdata;
+	else if(streamptr < 0) streamptr = 0;
 }
 
 int OByteArray::size() const {
@@ -552,8 +544,7 @@ int OByteArray::size() const {
 }
 
 void OByteArray::advance(int addition) {
-	makeOwner();
-	mem->streamptr += addition;
+	streamptr += addition;
 }
 
 void OByteArray::advanceSize(int addition) {
@@ -562,11 +553,11 @@ void OByteArray::advanceSize(int addition) {
 }
 
 char* OByteArray::tellData() {
-	return mem->bytearray.get() + mem->streamptr;
+	return mem->bytearray.get() + streamptr;
 }
 
 int OByteArray::dataLeft() const {
-	return mem->sizeofdata - mem->streamptr;
+	return mem->sizeofdata - streamptr;
 }
 
 void OByteArray::resize(int len) {
@@ -584,7 +575,7 @@ const char* OByteArray::constData() const {
 
 void OByteArray::clear() {
 	mem->sizeofdata = 0;
-	mem->streamptr = 0;
+	streamptr = 0;
 }
 
 void OByteArray::makeOwner() {
@@ -592,7 +583,7 @@ void OByteArray::makeOwner() {
 		OByteArrayMem* newmem = new OByteArrayMem(mem->sizeofdata);
 		::memcpy(newmem->bytearray.get(), mem->bytearray.get(), mem->sizeofdata);
 		newmem->sizeofdata = mem->sizeofdata;
-		newmem->streamptr = mem->streamptr;
+		streamptr = streamptr;
 		mem.reset(newmem);
 	}
 }
@@ -601,14 +592,14 @@ void OByteArray::checkResize(int addition) {
 	//if the stream pointer is greater than the sizeofdata variable
 	//then adjust the addition variable to reflect this so we allocate
 	//the corrent ammount of memory
-	int check = mem->streamptr + addition - mem->sizeofdata;
+	int check = streamptr + addition - mem->sizeofdata;
 	if(check > 0) addition = check;
 	
 	if(mem.use_count() > 1) {
 		OByteArrayMem* newmem = new OByteArrayMem(addition+mem->sizeofdata);
 		::memcpy(newmem->bytearray.get(), mem->bytearray.get(), mem->sizeofdata);
 		newmem->sizeofdata = mem->sizeofdata;
-		newmem->streamptr = mem->streamptr;
+		streamptr = streamptr;
 		mem.reset(newmem);
 	} else if((addition + mem->sizeofdata) > mem->sizeofarray) {
 		int mult = 2;

@@ -202,13 +202,13 @@ public:
 	 *	the internally stored address from the sendTo() call.
 	 *	@param data The data to be written.
 	*/
-	int write(const OByteArray &data);
+	int write(OByteArray &data);
 	
 	/**	Write all the available data to the socket.
 	 *	@param addr The address the data will be sent to.
 	 *	@param data The data to be written.
 	*/
-	int write(const OSockAddress &addr, const OByteArray& data);
+	int write(const OSockAddress &addr, OByteArray& data);
 };
 
 #endif // OUdpSocket_H

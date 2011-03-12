@@ -360,7 +360,7 @@ OByteArray OUdpSocket::readAll(OSockAddress& addr) {
 	return read(addr, available());
 }
 
-int OUdpSocket::write(const OByteArray &data) {
+int OUdpSocket::write(OByteArray &data) {
 	int ret = -1;
 	
 	if((ret = ::sendto(fdes, data.constData(), data.size(), 0, 
@@ -373,7 +373,7 @@ int OUdpSocket::write(const OByteArray &data) {
 	return ret;
 }
 
-int OUdpSocket::write(const OSockAddress &addr, const OByteArray &data) {
+int OUdpSocket::write(const OSockAddress &addr, OByteArray &data) {
 	int ret = -1;
 	
 	if((ret = ::sendto(fdes, data.constData(), data.size(), 0, 

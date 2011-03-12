@@ -407,17 +407,16 @@ protected:
 			sizeofdata = 0;
 			sizeofarray = len;
 			bytearray.reset(new char[len]);
-			streamptr = 0;
 		}
 		
 		int sizeofdata;		//the amount of data being stored
 		int sizeofarray;	//the size of the memory being pointed to
 		unique_ptr<char> bytearray;	//a pointer to the data
 		
-		int streamptr;
-		
 		OO::ArrayBase dir;
 	};
+	
+	int streamptr;
 	
 	shared_ptr<OByteArrayMem> mem;
 	

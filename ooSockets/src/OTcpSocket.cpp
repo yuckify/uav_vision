@@ -4,10 +4,10 @@ OTcpSocket::OTcpSocket(OThread *parent) : OSocket(parent) {
 	
 }
 
-void OTcpSocket::connect(OString addr, 
+bool OTcpSocket::connect(OString addr, 
 						 unsigned short port, 
 						 OO::SockFamily family) {
-	OSocket::connect(addr, port, OO::Tcp, family);
+	return OSocket::connect(addr, port, OO::Tcp, family);
 }
 
 bool OTcpSocket::connect(const OSockAddress& addr) {
@@ -46,7 +46,7 @@ OByteArray OTcpSocket::readAll() {
 	return read(available());
 }
 
-int OTcpSocket::write(const OByteArray &data) {
+int OTcpSocket::write(OByteArray &data) {
 	int ret = -1;
 	
 	if((ret = send(fdes, data.constData(), data.size(), 0)) == -1) {

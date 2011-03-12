@@ -138,7 +138,7 @@ public:
 	virtual OByteArray readAll() = 0;
 	
 	/// Write the entire contents of 'data' to the socket.
-	virtual int write(const OByteArray& data) = 0;
+	virtual int write(OByteArray& data) = 0;
 	
 	/// Check if the ready write signal has been enabled.
 	bool readyWriteEnabled() const;

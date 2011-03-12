@@ -69,7 +69,7 @@ public:
 	 *	@param port The port on which to connect.
 	 *	@param family The address family to use.
 	*/
-	void connect(OString			addr, 
+	bool connect(OString			addr, 
 				 unsigned short		port, 
 				 OO::SockFamily	family = OO::NullFamily);
 	
@@ -97,7 +97,7 @@ public:
 	/**	Write all the available data to the socket.
 	 *	@param data The data to be written.
 	*/
-	int write(const OByteArray &data);
+	int write(OByteArray &data);
 };
 
 #endif // OTcpSocket_H
