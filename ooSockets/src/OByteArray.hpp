@@ -100,7 +100,7 @@ public:
 	 *	n bytes;
 	 *	@param n The length of the array to start with.
 	*/
-	OByteArray(int n = 10);
+	explicit OByteArray(int n = 10);
 	
 	/**	The copy constructor.
 	 *	@param old The OByteArray obect being copied.
