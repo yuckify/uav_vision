@@ -25,8 +25,8 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_regex \
     -lpthread \
     -lboost_filesystem \
-    -lboost_system \
-	-lbotan
+    -lboost_system 
+#	-lbotan
 SOURCES += main.cpp \
     CVOperator.cpp \
     ../../ooSockets/src/OVersion.cpp \

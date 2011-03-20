@@ -1,5 +1,6 @@
 #include <QtGui/QApplication>
 #include "CVOperator.h"
+/*
 #include<botan/botan.h>
 #include<botan/auto_rng.h>
 #include<botan/rsa.h>
@@ -7,6 +8,7 @@
 #include<exception>
 
 using namespace Botan;
+*/
 
 #include<opencv/cv.h>
 #include<opencv/highgui.h>
