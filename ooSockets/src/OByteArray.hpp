@@ -40,12 +40,6 @@
 
 #include<OString.hpp>
 
-#define OO_OPENCV
-
-#ifdef OO_OPENCV
-#include<opencv/cv.h>
-#endif
-
 #ifndef __windows__
 	#include<tr1/functional>
 	using namespace std::placeholders;
@@ -433,27 +427,5 @@ protected:
 };
 
 typedef OList<OByteArray> OByteList;
-
-#ifdef OO_OPENCV
-
-/**	OpenCV integration. Serialize an IplImage. This method ONLY 
- *	serializes the image data.
-*/
-OByteArray& operator<<(OByteArray& data, IplImage*& img);
-
-/**	OpenCV integration. Deserialize an IplImage.
-*/
-OByteArray& operator>>(OByteArray& data, IplImage*& img);
-
-/**	OpenCV integration. Serialize a CvMat.
-*/
-OByteArray& operator<<(OByteArray& data, CvMat*& mat);
-
-/**	OpenCV integration. Deserialize a CvMat.
-*/
-OByteArray& operator>>(OByteArray& data, CvMat*& mat);
-
-#endif
-
 
 #endif // OByteArray_H

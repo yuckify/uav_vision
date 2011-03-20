@@ -27,6 +27,9 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_filesystem \
     -lboost_system \
 	-lbotan
+
+DEFINES += OO_ALL
+
 SOURCES += main.cpp \
     CVOperator.cpp \
     ../../ooSockets/src/OVersion.cpp \
@@ -53,7 +56,8 @@ SOURCES += main.cpp \
     ../../ooSockets/src/OAddressInfo.cpp \
     ../common/ImageDatabase.cpp \
     LogWidget.cpp \
-    ../../ooSockets/src/ODSMux.cpp
+    ../../ooSockets/src/ODSMux.cpp \
+    ../../ooSockets/src/OCompatibility.cpp
 HEADERS += CVOperator.h \
     ../../ooSockets/src/OVersion.hpp \
     ../../ooSockets/src/OUdpSocket.hpp \
@@ -83,5 +87,6 @@ HEADERS += CVOperator.h \
     ../common/Defs.h \
     ../common/ImageDatabase.h \
     LogWidget.h \
-    ../../ooSockets/src/ODSMux.h
+    ../../ooSockets/src/ODSMux.h \
+    ../../ooSockets/src/OCompatibility.hpp
 FORMS += CVOperator.ui

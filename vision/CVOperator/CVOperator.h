@@ -38,6 +38,7 @@
 #include<OTcpSocket.hpp>
 #include<OUdpSocket.hpp>
 #include<OSockAddress.hpp>
+#include<OCompatibility.hpp>
 
 #include<Defs.h>
 #include<ImageDatabase.h>

@@ -492,6 +492,7 @@ void CVOperator::VideoFrameSegmentSwitch(OByteArray& pack) {
 	//deserialize the image data
 	pack.read((char*)ptr + segindex*align, maxlength);
 	
+	
 	//check if this is the last segment, if so display the image
 	if((segsPerFrame - 1) == segindex) {
 		
@@ -500,6 +501,7 @@ void CVOperator::VideoFrameSegmentSwitch(OByteArray& pack) {
 		if(img == NULL) return;
 		
 		
+		/*
 		CvSize frame_size;
 		frame_size.height = img->height;
 		frame_size.width = img->width;
@@ -547,6 +549,9 @@ void CVOperator::VideoFrameSegmentSwitch(OByteArray& pack) {
 		// imageframe is my QLabel object
 		QImage qimage = QImage(data, width, height, bytesPerLine, QImage::Format_RGB32 );
 		disp->setPixmap(QPixmap::fromImage(qimage, 0));
+		*/
+		
+		disp->setPixmap(QPixmap::fromImage(IplImageToQImage(img), 0));
 		
 		cvReleaseMat(&compFrame);
 		cvReleaseImage(&img);

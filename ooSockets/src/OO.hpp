@@ -58,6 +58,12 @@
 	#include<termios.h>
 #endif
 
+//include all components if OO_ALL is defined
+#ifdef OO_ALL
+#define OO_OPENCV
+
+#endif
+
 using namespace std;
 
 /**	\mainpage

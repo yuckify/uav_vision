@@ -1,8 +1,7 @@
 # -------------------------------------------------
 # Project created by QtCreator 2010-11-03T19:37:14
 # -------------------------------------------------
-QT -= core \
-    gui
+
 TARGET = plane
 CONFIG += console
 CONFIG -= app_bundle
@@ -39,6 +38,8 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_filesystem \
     -lboost_system \
 	`pkg-config --libs opencv`
+
+DEFINES += OO_ALL
 
 #macx { 
 #    QMAKE_CXX = /opt/local/bin/gcc-mp-4.5
@@ -89,7 +90,8 @@ SOURCES += main.cpp \
     ../../ooSockets/src/OByteArray.cpp \
     ../../ooSockets/src/OAddressInfo.cpp \
     ../common/ImageDatabase.cpp \
-    ../../ooSockets/src/OTime.cpp
+    ../../ooSockets/src/OTime.cpp \
+    ../../ooSockets/src/OCompatibility.cpp
 HEADERS += MainThread.h \
     VideoThread.h \
     ../../ooSockets/src/OVersion.hpp \
@@ -118,4 +120,5 @@ HEADERS += MainThread.h \
     ../../ooSockets/src/OAddressInfo.hpp \
     ../common/Defs.h \
     ../common/ImageDatabase.h \
-    ../../ooSockets/src/OTime.hpp
+    ../../ooSockets/src/OTime.hpp \
+    ../../ooSockets/src/OCompatibility.hpp
