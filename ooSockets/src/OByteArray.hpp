@@ -441,18 +441,15 @@ typedef OList<OByteArray> OByteList;
 */
 OByteArray& operator<<(OByteArray& data, IplImage*& img);
 
-/**	OpenCV integration. Deserialize and IplImage. This method
- *	ONLY deserailizes the image data.
+/**	OpenCV integration. Deserialize an IplImage.
 */
 OByteArray& operator>>(OByteArray& data, IplImage*& img);
 
-/**	
- *	
+/**	OpenCV integration. Serialize a CvMat.
 */
 OByteArray& operator<<(OByteArray& data, CvMat*& mat);
 
-/**	
- *	
+/**	OpenCV integration. Deserialize a CvMat.
 */
 OByteArray& operator>>(OByteArray& data, CvMat*& mat);
 

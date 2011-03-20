@@ -43,8 +43,10 @@ void VideoThread::run() {
 			cout<<"Error Capturing Frame" <<endl;
 			break;
 		}
+		
 		comptex.lock();
 		CvMat* temp;
+		
 		//if the new compression method fails, reset to jpeg
 		try {
 			temp = cvEncodeImage(compext.toCString(), frame, p); //Encode image as Jpeg

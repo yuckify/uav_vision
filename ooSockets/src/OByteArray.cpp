@@ -660,11 +660,33 @@ OByteArray& operator>>(OByteArray& data, IplImage*& img) {
 }
 
 OByteArray& operator<<(OByteArray& data, CvMat*& mat) {
+	if(!mat) return data;
 	
+	//serialize the header
+	data<<mat->rows <<mat->cols <<mat->type;
+	
+	//serialize the data, this data is unaligned so no
+	//iteration is necessary
+	data.append((const char*)mat->data.ptr, mat->step * mat->rows);
+	
+	return data;
 }
 
 OByteArray& operator>>(OByteArray& data, CvMat*& mat) {
+	int rows;
+	int cols;
+	int type;
 	
+	//deserialize the header
+	data>>rows >>cols >>type;
+	
+	//allocate the data
+	mat = cvCreateMat(rows, cols, type);
+	
+	//deserialize the data
+	data.read((char*)mat->data.ptr, mat->step * mat->rows);
+	
+	return data;
 }
 
 #endif
