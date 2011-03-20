@@ -35,9 +35,9 @@
   *	A OTimer instance should be stored and parented 
   *	inside a OThread instance as follows:
   *	\code
-  *	class SOThread : public OThread {
+  *	class SThread : public SThread {
   *	public:
-  *		SOThread() {
+  *		SThread() {
   *			OTimer = new OTimer(this);
   *			OTimer->callback(bind(&SOThread::timeFunction, this));
   *			OTimer->start(500, OO::Once);

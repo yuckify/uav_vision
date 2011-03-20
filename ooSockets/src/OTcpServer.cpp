@@ -25,8 +25,7 @@ OByteArray OTcpServer::read( int len) {
 OByteArray OTcpServer::readAll() {
 	return OByteArray();
 }
-
-int OTcpServer::write(const OByteArray &data) {
+int OTcpServer::write(OByteArray &data) {
 	return 0;
 }
 

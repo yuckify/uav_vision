@@ -539,7 +539,7 @@ void OByteArray::seek(int pos, OO::IOBase base) {
 	else if(streamptr < 0) streamptr = 0;
 }
 
-int OByteArray::size() const {
+unsigned OByteArray::size() const {
 	return mem->sizeofdata;
 }
 
@@ -611,3 +611,60 @@ void OByteArray::checkResize(int addition) {
 		tmparray = 0;
 	}
 }
+
+#ifdef OO_OPENCV
+OByteArray& operator<<(OByteArray& data, IplImage*& img) {
+	if(!img) return data;
+	
+	//serialize the header information for the image data
+	data<<img->width <<img->height <<img->nChannels <<img->depth;
+	
+	int unaligned_width = img->width * img->nChannels;
+	
+	//serialize the image datas
+	const char* ptr = img->imageData;
+	for(int i=0; i<img->height; i++) {
+		data.append(ptr, unaligned_width);
+		ptr += img->widthStep;
+	}
+	
+	return data;
+}
+
+OByteArray& operator>>(OByteArray& data, IplImage*& img) {
+	//deserialize the header of the image
+	int width;
+	int height;
+	int channels;
+	int depth;
+	
+	data>>width >>height >>channels >>depth;
+	
+	CvSize size;
+	size.width = width;
+	size.height = height;
+	
+	//allocate the image
+	img = cvCreateImage(size, depth, channels);
+	
+	int unaligned_width = img->width * img->nChannels;
+	
+	//deserialize the image data
+	char* ptr = img->imageData;
+	for(int i=0; i<img->height; i++) {
+		data.read(ptr, unaligned_width);
+		ptr += img->widthStep;
+	}
+	
+	return data;
+}
+
+OByteArray& operator<<(OByteArray& data, CvMat*& mat) {
+	
+}
+
+OByteArray& operator>>(OByteArray& data, CvMat*& mat) {
+	
+}
+
+#endif

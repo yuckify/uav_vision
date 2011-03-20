@@ -36,8 +36,15 @@
 #include<functional>
 
 #include<boost/crc.hpp>
+#include<boost/scoped_array.hpp>
 
 #include<OString.hpp>
+
+#define OO_OPENCV
+
+#ifdef OO_OPENCV
+#include<opencv/cv.h>
+#endif
 
 #ifndef __windows__
 	#include<tr1/functional>
@@ -383,7 +390,7 @@ public:
 	
 	/**	The amount of data being stored in this OByteArray.
 	*/
-	int size() const;
+	unsigned size() const;
 	
 	/**	Increase the storage size of this OByteArray by len.
 	 */
@@ -403,15 +410,14 @@ public:
 	
 protected:
 	struct OByteArrayMem {
-		OByteArrayMem(int len) {
+		OByteArrayMem(int len) : bytearray(new char[len]) {
 			sizeofdata = 0;
 			sizeofarray = len;
-			bytearray.reset(new char[len]);
 		}
 		
 		int sizeofdata;		//the amount of data being stored
 		int sizeofarray;	//the size of the memory being pointed to
-		unique_ptr<char> bytearray;	//a pointer to the data
+		boost::scoped_array<char> bytearray;	//a pointer to the data
 		
 		OO::ArrayBase dir;
 	};
@@ -427,5 +433,30 @@ protected:
 };
 
 typedef OList<OByteArray> OByteList;
+
+#ifdef OO_OPENCV
+
+/**	OpenCV integration. Serialize an IplImage. This method ONLY 
+ *	serializes the image data.
+*/
+OByteArray& operator<<(OByteArray& data, IplImage*& img);
+
+/**	OpenCV integration. Deserialize and IplImage. This method
+ *	ONLY deserailizes the image data.
+*/
+OByteArray& operator>>(OByteArray& data, IplImage*& img);
+
+/**	
+ *	
+*/
+OByteArray& operator<<(OByteArray& data, CvMat*& mat);
+
+/**	
+ *	
+*/
+OByteArray& operator>>(OByteArray& data, CvMat*& mat);
+
+#endif
+
 
 #endif // OByteArray_H

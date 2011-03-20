@@ -377,6 +377,10 @@ void OSocket::setParent(OThread *p) {
 	registerFD();
 }
 
+bool OSocket::isEmpty() {
+	
+}
+
 OByteArray OSocket::magicPacket(OMacAddress mac) {
 	OByteArray pack;
 	

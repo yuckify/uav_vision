@@ -11,6 +11,8 @@ macx {
 	INCLUDEPATH += /usr/local/include
 	LIBS += `pkg-config --libs /usr/local/lib/pkgconfig/opencv.pc`
 }
+
+INCLUDEPATH += /usr/include
 linux-g++ {
 	QMAKE_CXX = g++-4.5
 	LIBS += `pkg-config --libs opencv`
@@ -23,7 +25,8 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_regex \
     -lpthread \
     -lboost_filesystem \
-    -lboost_system 
+    -lboost_system \
+	-lbotan
 SOURCES += main.cpp \
     CVOperator.cpp \
     ../../ooSockets/src/OVersion.cpp \

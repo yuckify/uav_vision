@@ -16,6 +16,9 @@ VideoThread::VideoThread(bst::mutex &mut, deque<OByteArray> &pkts, OPipe &p, Pla
 
 void VideoThread::run() {
 	CvCapture* capture = cvCaptureFromCAM(-1);
+	if(!capture) {
+		cout<<"Error Opening Camera" <<endl;
+	}
 	IplImage* frame;
 	int p[3];
 	p[0] = CV_IMWRITE_JPEG_QUALITY;
@@ -36,7 +39,10 @@ void VideoThread::run() {
 			continue;
 		}
 		
-		if( !frame ) break;
+		if( !frame ) {
+			cout<<"Error Capturing Frame" <<endl;
+			break;
+		}
 		comptex.lock();
 		CvMat* temp;
 		//if the new compression method fails, reset to jpeg

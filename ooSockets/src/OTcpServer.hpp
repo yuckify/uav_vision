@@ -52,7 +52,7 @@ public:
 	OByteArray read(int len);
 	OByteArray readAll();
 	
-	int write(const OByteArray& data);
+	int write(OByteArray &data);
 	
 	void readLoop();
 	void writeLoop();

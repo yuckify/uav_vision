@@ -239,6 +239,11 @@ public:
 	/// Set the parent thread for this socket.
 	void setParent(OThread* p);
 	
+	
+	//TODO
+	//make this do something
+	bool isEmpty();
+	
 	/// Generate a magick packet to be broadcasted for Wake on LAN.
 	static OByteArray magicPacket(OMacAddress mac);
 	
