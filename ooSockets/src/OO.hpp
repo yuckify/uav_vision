@@ -60,8 +60,21 @@
 
 //include all components if OO_ALL is defined
 #ifdef OO_ALL
-#define OO_OPENCV
 
+#ifndef OO_OPENCV
+#define OO_OPENCV
+#endif
+
+#ifndef OO_QT
+#define OO_QT
+#endif
+	
+#endif
+
+#ifdef QT_GUI_LIB
+#ifndef OO_QT
+#define OO_QT
+#endif
 #endif
 
 using namespace std;

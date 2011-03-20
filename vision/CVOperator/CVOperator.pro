@@ -25,16 +25,10 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_regex \
     -lpthread \
     -lboost_filesystem \
-<<<<<<< HEAD
-    -lboost_system \
-	-lbotan
+    -lboost_system
 
 DEFINES += OO_ALL
 
-=======
-    -lboost_system 
-#	-lbotan
->>>>>>> 15a61decd9f477a0505d0e896a7a9ee157f79983
 SOURCES += main.cpp \
     CVOperator.cpp \
     ../../ooSockets/src/OVersion.cpp \

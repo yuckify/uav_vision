@@ -1,23 +1,25 @@
 #include"OCompatibility.hpp"
 
 #ifdef OO_OPENCV
+#ifdef OO_QT
 
 QImage IplImageToQImage(IplImage *img) {
 	if(!img) return QImage();
 	
 	//some simple optimizations if the same sized image
 	//is passed to this function repeatedly
-	static IplImage* tchannel0 = NULL;
-	static IplImage* tchannel1 = NULL;
-	static IplImage* tchannel2 = NULL;
-	static IplImage* tchannel3 = NULL;
-	static IplImage* dframe = NULL;
-	static CvSize size = {0, 0};
+	static IplImage* tchannel0 = 0;
+	static IplImage* tchannel1 = 0;
+	static IplImage* tchannel2 = 0;
+	static IplImage* tchannel3 = 0;
+	static IplImage* dframe = 0;
+	static int width = 0;
+	static int height = 0;
 	static int channels = 0;
 	
 	//the input image size or channels has changed so deallocate 
 	//the temporary variables
-	if(img->width != size.width || img->height != size.height || 
+	if(img->width != width || img->height != height || 
 	   img->nChannels != channels) {
 		//make sure the variables has been allocate for in the first
 		//place
@@ -29,13 +31,14 @@ QImage IplImageToQImage(IplImage *img) {
 			cvReleaseImage(&tchannel2);
 			cvReleaseImage(&tchannel3);
 			cvReleaseImage(&dframe);
-			size = {0, 0};
+			width = 0;
+			height = 0;
 			channels = 0;
-			tchannel0 = NULL;
-			tchannel1 = NULL;
-			tchannel2 = NULL;
-			tchannel3 = NULL;
-			dframe = NULL;
+			tchannel0 = 0;
+			tchannel1 = 0;
+			tchannel2 = 0;
+			tchannel3 = 0;
+			dframe = 0;
 		}
 	}
 	
@@ -43,16 +46,18 @@ QImage IplImageToQImage(IplImage *img) {
 	if(!tchannel0) {
 		CvSize size;
 		size.height = img->height;
-		size.width = img->height;
+		size.width = img->width;
+		width = img->width;
+		height = img->height;
 		channels = img->nChannels;
-		tchannel0 = cvCreateImage(size, IPL_DEPTH_8U, channels);
-		tchannel1 = cvCreateImage(size, IPL_DEPTH_8U, channels);
-		tchannel2 = cvCreateImage(size, IPL_DEPTH_8U, channels);
-		tchannel3 = cvCreateImage(size, IPL_DEPTH_8U, channels);
+		tchannel0 = cvCreateImage(size, IPL_DEPTH_8U, 1);
+		tchannel1 = cvCreateImage(size, IPL_DEPTH_8U, 1);
+		tchannel2 = cvCreateImage(size, IPL_DEPTH_8U, 1);
+		tchannel3 = cvCreateImage(size, IPL_DEPTH_8U, 1);
 		dframe = cvCreateImage(size, img->depth, 4);
 		
 		//clear the alpha channel
-		cvSet(tchannel0,cvScalarAll(255),0);
+		cvSet(tchannel0, cvScalarAll(255), 0);
 	}
 	
 	// with img being the captured frame (3 channel BGR)
@@ -64,13 +69,15 @@ QImage IplImageToQImage(IplImage *img) {
 	const unsigned char * data = (unsigned char *)(dframe->imageData);
 	
 	// read other parameters in local variables
-	int width = dframe->width;
-	int height = dframe->height;
-	int bytesPerLine = dframe->widthStep;
+	int fwidth = dframe->width;
+	int fheight = dframe->height;
+	int fbytesPerLine = dframe->widthStep;
 	
 	// imageframe is my QLabel object
-	return QImage(data, width, height, bytesPerLine, QImage::Format_RGB32 );
+	return QImage(data, fwidth, fheight, fbytesPerLine, QImage::Format_RGB32 );
 }
+
+#endif
 
 OByteArray& operator<<(OByteArray& data, IplImage*& img) {
 	if(!img) return data;

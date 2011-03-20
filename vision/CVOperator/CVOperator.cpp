@@ -500,62 +500,12 @@ void CVOperator::VideoFrameSegmentSwitch(OByteArray& pack) {
 		
 		if(img == NULL) return;
 		
-		
-		/*
-		CvSize frame_size;
-		frame_size.height = img->height;
-		frame_size.width = img->width;
-		
-		if(!iplconv_init || dframe->width != img->width || 
-				dframe->height != img->height) {
-			
-			if(dframe) {
-				cvReleaseImage(&dframe);
-				cvReleaseImage(&tchannel0);
-				cvReleaseImage(&tchannel1);
-				cvReleaseImage(&tchannel2);
-				cvReleaseImage(&tchannel3);
-			}
-			
-			dframe = cvCreateImage(frame_size, img->depth, 4);
-			
-			// the individual channels for the IplImage
-			tchannel0 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-			tchannel1 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-			tchannel2 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-			tchannel3 = cvCreateImage(frame_size, IPL_DEPTH_8U, 1);
-			
-			iplconv_init = true;
-		}
-		
-		// set all elements in tchannel0 (alpha channel) to 255
-		cvSet(tchannel0,cvScalarAll(255),0);
-		
-		// with img being the captured frame (3 channel RGB)
-		// and dframe the frame to be displayed
-		cvSplit(img, tchannel1, tchannel2, tchannel3, NULL);
-		cvMerge(tchannel1, tchannel2, tchannel3, tchannel0, dframe);
-		
-		// point to the image data stored in the IplImage*
-		const unsigned char * data = (unsigned char *)(dframe->imageData);
-		
-		// read other parameters in local variables
-		int width = dframe->width;
-		int height = dframe->height;
-		int bytesPerLine = dframe->widthStep;
-		
-		disp->clear();
-		
-		// imageframe is my QLabel object
-		QImage qimage = QImage(data, width, height, bytesPerLine, QImage::Format_RGB32 );
-		disp->setPixmap(QPixmap::fromImage(qimage, 0));
-		*/
-		
+		//display the image
 		disp->setPixmap(QPixmap::fromImage(IplImageToQImage(img), 0));
 		
+		//release memory we won't be using anymore
 		cvReleaseMat(&compFrame);
 		cvReleaseImage(&img);
-		
 	}
 }
 
