@@ -38,6 +38,10 @@ public:
 	*/
 	OTcpServer(OThread* parent = 0);
 	
+#ifdef OO_QT
+	OTcpServer(QObject* parent);
+#endif
+	
 	/// Setup to wait for someone to open a connection.
 	bool listen(const OAddressInfo& info);
 	
@@ -56,6 +60,13 @@ public:
 	
 	void readLoop();
 	void writeLoop();
+	
+#ifdef OO_QT
+public slots:
+	void readyReadSlot();
+	
+#endif
+	
 };
 
 #endif // OTcpServer_H

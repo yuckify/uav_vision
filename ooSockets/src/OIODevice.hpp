@@ -26,7 +26,14 @@
 
 #include<OO.hpp>
 
-class OIODevice {
+#ifdef OO_QT
+#include<QObject>
+#endif
+
+class OIODevice : public QObject {
+#ifdef OO_QT
+	Q_OBJECT
+#endif
 public:
 	
 	virtual OO::HANDLE fileDescriptor() const = 0;
@@ -36,8 +43,6 @@ public:
 	virtual void readLoop() = 0;
 	virtual void writeLoop() = 0;
 	virtual void priorityLoop() = 0;
-	
-protected:
 	
 };
 

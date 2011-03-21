@@ -40,6 +40,11 @@
 #include<OSockError.hpp>
 #include<OO.hpp>
 
+#ifdef OO_QT
+#include<QObject>
+#include<QSocketNotifier>
+#endif
+
 #ifdef __linux__
 	#define GS_NOSIGNAL MSG_NOSIGNAL
 	
@@ -96,6 +101,9 @@ using namespace std::placeholders;
  *	OSocket the OThread::exec() function must be called.
 */
 class OSocket : public OIODevice {
+#ifdef OO_QT
+	Q_OBJECT
+#endif
 public:
 	/**	Constructor.
 	 *	
@@ -104,6 +112,11 @@ public:
 	 *		socket object to work.
 	*/
 	OSocket(OThread* parent = 0);
+	
+#ifdef OO_QT
+	OSocket(QObject* parent);
+#endif
+	
 	~OSocket();
 	
 	/// Get socket information about a host.
@@ -278,6 +291,11 @@ public:
 	/// 
 	virtual void priorityLoop();
 	
+#ifdef OO_QT
+public slots:
+	virtual void readyReadSlot(int socket);
+	virtual void readyWriteSlot(int socket);
+#endif
 protected:
 	///	Open a connection to someone. By default the connection is Tcp and 
 	/// either IPv4 or IPv6.
@@ -323,6 +341,22 @@ protected:
 	///	register fds so the thread may do a blocking read.
 	OThread* par;
 	
+#ifdef OO_QT
+	/// This is the parent of this objec, for QT compatibility.
+	QObject* qtpar;
+	
+	auto_ptr<QSocketNotifier> qt_read;
+	auto_ptr<QSocketNotifier> qt_write;
+	
+	/// This is kind of a hack... This is set by subclass OTcpServer
+	/// so when the QSocketNotifier sends a signal that there is
+	/// activity on the socket. The OTcpServer instance can call
+	/// incommingLoop(). Incomming connections are the only activity
+	/// a listening tcp socket will ever experience.
+	function<void ()> readyReadPatch;
+	
+#endif
+	
 	OSockAddress recvaddr;
 	OSockAddress sendaddr;
 	
@@ -331,6 +365,12 @@ protected:
 	void registerFD() {
 		if(par && fdes) {
 			par->registerReadFD((OO::HANDLE)fdes, this);
+		}
+		if(qtpar && fdes) {
+			qt_read.reset(new QSocketNotifier(fdes, 
+											  QSocketNotifier::Read, this));
+			QObject::connect(qt_read.get(), SIGNAL(activated(int)), 
+							 this, SLOT(readyReadSlot(int)));
 		}
 	}
 	

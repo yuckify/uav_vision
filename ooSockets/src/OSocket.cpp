@@ -17,6 +17,7 @@ OSocket::OSocket(OThread *parent) {
 
 
 	_clearError();
+	qtpar = 0;
 	par = parent;
 	sockerr = 0;
 	conn = false;
@@ -24,6 +25,33 @@ OSocket::OSocket(OThread *parent) {
 	esigstat = true;
 	writestat = false;
 }
+
+#ifdef OO_QT
+OSocket::OSocket(QObject *parent) {
+	//set the socket limit to a much larger number
+	if(!initSockLimit) {
+#ifdef __apple__
+		::system("ulimit -n `sysctl -n kern.maxfilesperproc`");
+#elif defined(__linux)
+	
+#elif defined(__windows__)
+	
+#endif
+		initSockLimit = true;
+	}
+	
+	_clearError();
+	qtpar = parent;
+	par = 0;
+	sockerr = 0;
+	conn = false;
+	fdes = 0;
+	esigstat = true;
+	writestat = false;
+	
+}
+
+#endif
 
 OSocket::~OSocket() {
 	if(connected()) {
@@ -47,10 +75,26 @@ void OSocket::close() {
 }
 
 bool OSocket::readyWriteEnabled() const {
+#ifdef OO_QT
+	if(qt_read.get()) {
+		return writestat || qt_read->isEnabled();
+	}
 	return writestat;
+#else
+	return writestat;
+#endif
 }
 
 void OSocket::enableReadyWrite() {
+#ifdef OO_QT
+	if(qt_write.get()) {
+		qt_write->setEnabled(true);
+	} else if(fdes && qtpar) {
+		qt_write.reset(new QSocketNotifier(fdes, QSocketNotifier::Write, qtpar));
+		QObject::connect(qt_write.get(), SIGNAL(activated(int)), this, 
+						 SLOT(readyWriteSlot(int)));
+	}
+#endif
 	if(readyWriteCbk && !writestat && fdes) {
 		par->registerWriteFD((OO::HANDLE)fdes, this);
 		writestat = true;
@@ -58,6 +102,11 @@ void OSocket::enableReadyWrite() {
 }
 
 void OSocket::disableReadyWrite() {
+#ifdef OO_QT
+	if(qt_write.get()) {
+		qt_write->setEnabled(false);
+	}
+#endif
 	if(writestat) {
 		par->unregisterWriteFD((OO::HANDLE)fdes);
 		writestat = false;
@@ -615,6 +664,21 @@ void OSocket::incommingLoop() {
 void OSocket::priorityLoop() {
 	
 }
+
+#ifdef OO_QT
+
+void OSocket::readyReadSlot(int socket) {
+	if(readyReadPatch)
+		readyReadPatch();
+	else
+		this->readLoop();
+}
+
+void OSocket::readyWriteSlot(int socket) {
+	this->writeLoop();
+}
+
+#endif
 
 void OSocket::incommingFunc(function<void (int)> cbk) {
 	incommingCbk = cbk;
