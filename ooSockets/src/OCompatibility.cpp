@@ -90,7 +90,7 @@ OByteArray& operator<<(OByteArray& data, IplImage*& img) {
 	//serialize the image datas
 	const char* ptr = img->imageData;
 	for(int i=0; i<img->height; i++) {
-		data.append(ptr, unaligned_width);
+		data.write(ptr, unaligned_width);
 		ptr += img->widthStep;
 	}
 	
@@ -133,7 +133,7 @@ OByteArray& operator<<(OByteArray& data, CvMat*& mat) {
 	
 	//serialize the data, this data is unaligned so no
 	//iteration is necessary
-	data.append((const char*)mat->data.ptr, mat->step * mat->rows);
+	data.write((const char*)mat->data.ptr, mat->step * mat->rows);
 	
 	return data;
 }

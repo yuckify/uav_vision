@@ -105,6 +105,11 @@ namespace OO {
 		Output
 	};
 	
+	enum Endian {
+		BigEndian,
+		LittleEndian
+	};
+	
 	enum IOBase {
 		end,
 		beg,

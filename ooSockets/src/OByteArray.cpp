@@ -1,7 +1,12 @@
 #include"OByteArray.hpp"
 
-OByteArray::OByteArray(int n) : 
+void (OByteArray::*OByteArray::seekSwitch[])(int) = {&OByteArray::seekEnd, 
+													 &OByteArray::seekBegin, 
+													 &OByteArray::seekCurrent};
+
+OByteArray::OByteArray(int n, OO::Endian end) : 
 		mem(new OByteArrayMem(n)) {
+	mem->end = end;
 	streamptr = 0;
 }
 
@@ -44,214 +49,273 @@ OByteArray::~OByteArray() {
 	mem.reset();
 }
 
-void OByteArray::append(OByteArray& ba) {
-	append(ba.data(), ba.size());
+void OByteArray::write(OByteArray& ba) {
+	write(ba.data(), ba.size());
 }
 
-void OByteArray::append(OByteArray&& ba) {
-	append(ba.data(), ba.size());
+void OByteArray::write(OByteArray&& ba) {
+	write(ba.data(), ba.size());
 }
 
-void OByteArray::append(const string str) {
-	append(str.c_str(), str.length()+1);
+void OByteArray::write(const string str) {
+	write(str.c_str(), str.length()+1);
 }
 
-void OByteArray::append(const char* str) {
+void OByteArray::write(const char* str) {
 	int strlen = 0;
 	const char* strptr = str;
 	while(*strptr++)
 		strlen++;
 	
-	append(str, strlen+1);
+	write(str, strlen+1);
 }
 
-void OByteArray::append(const OString& str) {
-	append(str.c_str(), str.length()+1);
+void OByteArray::write(const OString& str) {
+	write(str.c_str(), str.length()+1);
 }
 
-void OByteArray::append(const OString&& str) {
-	append(str.c_str(), str.length()+1);
+void OByteArray::write(const OString&& str) {
+	write(str.c_str(), str.length()+1);
 }
 
-void OByteArray::append(const char* str, int len) {
+void OByteArray::write(const char* str, int len) {
 	if(!len) return;
 	checkResize(len);
 	::memcpy(this->tellData(), str, len);
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(OSerializable &obj) {
+void OByteArray::write(OSerializable &obj) {
 	makeOwner();
 	
 	mem->dir = OO::Input;
 	obj.serialize(*this, mem->dir);
 }
 
-void OByteArray::append(bool i) {
+void OByteArray::write(bool i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	bool* tmpptr = (bool*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	*tmpptr = htobe(i);
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(int8_t i) {
+void OByteArray::write(int8_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	int8_t* tmpptr = (int8_t*)this->tellData();
 	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(int16_t i) {
+void OByteArray::write(int16_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	int16_t* tmpptr = (int16_t*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
+	else								*tmpptr = htobe(i);
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(int32_t i) {
+void OByteArray::write(int32_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	int32_t* tmpptr = (int32_t*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
+	else								*tmpptr = htobe(i);
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(int64_t i) {
+void OByteArray::write(int64_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	int64_t* tmpptr = (int64_t*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
+	else								*tmpptr = htobe(i);
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(uint8_t i) {
+void OByteArray::write(uint8_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	uint8_t* tmpptr = (uint8_t*)this->tellData();
 	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(uint16_t i) {
+void OByteArray::write(uint16_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	uint16_t* tmpptr = (uint16_t*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
+	else								*tmpptr = htobe(i);
+	
+	
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(uint32_t i) {
+void OByteArray::write(uint32_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	uint32_t* tmpptr = (uint32_t*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
+	else								*tmpptr = htobe(i);
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
-void OByteArray::append(uint64_t i) {
+void OByteArray::write(uint64_t i) {
 	register int len = sizeof(i);
 	checkResize(len);
 	uint64_t* tmpptr = (uint64_t*)this->tellData();
-	*tmpptr = i;
-	if(streamptr == mem->sizeofdata)
-		mem->sizeofdata += len;
-	streamptr += len;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
+	else								*tmpptr = htobe(i);
+	
+	this->advanceSize(len);
+	this->seek(len, OO::cur);
 }
 
 OByteArray& OByteArray::operator<<(bool i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(int8_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(int16_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(int32_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(int64_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(uint8_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(uint16_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(uint32_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(uint64_t i) {
-	append(i);
+	write(i);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(OSerializable &obj) {
-	append(obj);
+	write(obj);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(const char* str) {
-	append(str);
+	write(str);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(string& str) {
-	append(str);
+	write(str);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(OString& str) {
-	append(str);
+	write(str);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(OString&& str) {
-	append(str);
+	write(str);
 	return *this;
 }
 
 OByteArray& OByteArray::operator<<(OByteArray& data) {
-	append(data);
+	write(data);
 	return *this;
+}
+
+void OByteArray::prepend(bool i) {
+	register int len = sizeof(i);
+	
+	
+	
+}
+
+void OByteArray::prepend(int8_t i) {
+	
+}
+
+void OByteArray::prepend(int16_t i) {
+	
+}
+
+void OByteArray::prepend(int32_t i) {
+	
+}
+
+void OByteArray::prepend(int64_t i) {
+	
+}
+
+void OByteArray::prepend(uint8_t i) {
+	
+}
+
+void OByteArray::prepend(uint16_t i) {
+	
+}
+
+void OByteArray::prepend(uint32_t i) {
+	
+}
+
+void OByteArray::prepend(uint64_t i) {
+	
 }
 
 OByteArray& OByteArray::operator >>(char& i) {
@@ -278,21 +342,33 @@ OByteArray& OByteArray::operator>>(uint8_t& i) {
 OByteArray& OByteArray::operator>>(uint16_t& i) {
 	uint16_t* tmpptr = (uint16_t*)(mem->bytearray.get() + streamptr);
 	streamptr += sizeof(i);
-	i = *tmpptr;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	i = letoh(*tmpptr);
+	else								i = betoh(*tmpptr);
+	
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(uint32_t& i) {
 	uint32_t* tmpptr = (uint32_t*)(mem->bytearray.get() + streamptr);
 	streamptr += sizeof(i);
-	i = *tmpptr;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	i = letoh(*tmpptr);
+	else								i = betoh(*tmpptr);
+	
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(uint64_t& i) {
 	uint64_t* tmpptr = (uint64_t*)(mem->bytearray.get() + streamptr);
 	streamptr += sizeof(i);
-	i = *tmpptr;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	i = letoh(*tmpptr);
+	else								i = betoh(*tmpptr);
+	
 	return *this;
 }
 
@@ -306,21 +382,33 @@ OByteArray& OByteArray::operator>>(int8_t& i) {
 OByteArray& OByteArray::operator>>(int16_t& i) {
 	int16_t* tmpptr = (int16_t*)(mem->bytearray.get() + streamptr);
 	streamptr += sizeof(i);
-	i = *tmpptr;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	i = letoh(*tmpptr);
+	else								i = betoh(*tmpptr);
+	
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(int32_t& i) {
 	int32_t* tmpptr = (int32_t*)(mem->bytearray.get() + streamptr);
 	streamptr += sizeof(i);
-	i = *tmpptr;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	i = letoh(*tmpptr);
+	else								i = betoh(*tmpptr);
+	
 	return *this;
 }
 
 OByteArray& OByteArray::operator>>(int64_t& i) {
 	int64_t* tmpptr = (int64_t*)(mem->bytearray.get() + streamptr);
 	streamptr += sizeof(i);
-	i = *tmpptr;
+	
+	//check if we need to swap the byte ordering
+	if(mem->end == OO::LittleEndian)	i = letoh(*tmpptr);
+	else								i = betoh(*tmpptr);
+	
 	return *this;
 }
 
@@ -403,15 +491,15 @@ OList<OByteArray> OByteArray::chunkDataWithHeader(const char *data, int dsize, i
 	for(int i=0; i<chunks; i++) {
 		OByteArray array;
 		if(cbk) cbk(array, i, size);
-		array.append(data+i*size, size);
+		array.write(data+i*size, size);
 		bytes.push_back(array);
 	}
 	
-	//append on the remainder
+	//write on the remainder
 	if(remainder) {
 		OByteArray array;
 		if(cbk) cbk(array, chunks, remainder);
-		array.append(data+chunks*size, remainder);
+		array.write(data+chunks*size, remainder);
 		bytes.push_back(array);
 	}
 	
@@ -460,7 +548,7 @@ OList<OByteArray> OByteArray::chunkFileWithHeader(OString fn,
 		bytes.push_back(array);
 	}
 	
-	//append the remainder
+	//write the remainder
 	if(remainder) {
 		OByteArray array;
 		if(cbk) cbk(array, chunks, remainder);
@@ -498,7 +586,7 @@ int OByteArray::read(char* ptr, int len) {
 	if(len > dataLeft()) readlen = dataLeft();
 	else readlen = len;
 	::memcpy(ptr, tellData(), readlen);
-	advance(readlen);
+	this->seek(readlen, OO::cur);
 	return readlen;
 }
 
@@ -515,25 +603,7 @@ int OByteArray::tell() const {
 }
 
 void OByteArray::seek(int pos, OO::IOBase base) {
-	switch(base) {
-		case OO::beg: {
-			if(pos < 0)		streamptr = 0;
-			else			streamptr = pos;
-			break;
-		}
-		case OO::end: {
-			int newpos = pos + mem->sizeofdata + streamptr;
-			if(newpos < 0)	streamptr = 0;
-			else			streamptr = newpos;
-			break;
-		}
-		case OO::cur: {
-			int newpos = pos + streamptr;
-			if(newpos < 0)	streamptr = 0;
-			else			streamptr = newpos;
-			break;
-		}
-	}
+	(this->*seekSwitch[base])(pos);
 	
 	if(streamptr > mem->sizeofdata) streamptr = mem->sizeofdata;
 	else if(streamptr < 0) streamptr = 0;
@@ -543,13 +613,23 @@ unsigned OByteArray::size() const {
 	return mem->sizeofdata;
 }
 
-void OByteArray::advance(int addition) {
-	streamptr += addition;
+void OByteArray::seekCurrent(int len) {
+	streamptr += len;
+}
+
+void OByteArray::seekBegin(int len) {
+	streamptr = len;
+}
+
+void OByteArray::seekEnd(int len) {
+	streamptr = mem->sizeofdata + len;
 }
 
 void OByteArray::advanceSize(int addition) {
 	makeOwner();
-	mem->sizeofdata += addition;
+	int asize = streamptr + addition;
+	if(asize > mem->sizeofdata)
+		mem->sizeofdata = asize;
 }
 
 char* OByteArray::tellData() {
@@ -578,6 +658,15 @@ void OByteArray::clear() {
 	streamptr = 0;
 }
 
+OO::Endian OByteArray::endian() const {
+	return mem->end;
+}
+
+void OByteArray::setEndian(OO::Endian end) {
+	makeOwner();
+	mem->end = end;
+}
+
 void OByteArray::makeOwner() {
 	if(mem.use_count() > 1) {
 		OByteArrayMem* newmem = new OByteArrayMem(mem->sizeofdata);
@@ -589,9 +678,10 @@ void OByteArray::makeOwner() {
 }
 
 void OByteArray::checkResize(int addition) {
+	if(addition < 0) return;
 	//if the stream pointer is greater than the sizeofdata variable
 	//then adjust the addition variable to reflect this so we allocate
-	//the corrent ammount of memory
+	//the correct ammount of memory
 	int check = streamptr + addition - mem->sizeofdata;
 	if(check > 0) addition = check;
 	

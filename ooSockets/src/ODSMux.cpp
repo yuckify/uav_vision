@@ -107,7 +107,7 @@ void ODataStream::readyRead() {
 		//first check if we need to read in the header for the next packet
 		if(q_mem->q_readhead) {
 			//read in the header
-			q_mem->q_head.append(q_mem->q_sock.read(sizeof(ODSPacketLength) + 
+			q_mem->q_head.write(q_mem->q_sock.read(sizeof(ODSPacketLength) + 
 											   sizeof(ODSPacketType) - 
 											   q_mem->q_head.size()));
 			
@@ -127,7 +127,7 @@ void ODataStream::readyRead() {
 		}
 		
 		//read in some data
-		q_mem->q_data.append(q_mem->q_sock.read(q_mem->q_length - 
+		q_mem->q_data.write(q_mem->q_sock.read(q_mem->q_length - 
 												q_mem->q_data.size()));
 		
 		if(q_mem->q_data.size() == q_mem->q_length) {

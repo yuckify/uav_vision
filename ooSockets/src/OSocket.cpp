@@ -434,10 +434,10 @@ OByteArray OSocket::magicPacket(OMacAddress mac) {
 	OByteArray pack;
 	
 	for(int i=0; i<6; i++)
-		pack.append((unsigned char)0xff);
+		pack.write((unsigned char)0xff);
 	
 	for(int i=0; i<16; i++)
-		pack.append(mac.constData(), mac.size());
+		pack.write(mac.constData(), mac.size());
 	
 	return pack;
 }

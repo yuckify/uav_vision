@@ -47,6 +47,40 @@
 
 using namespace std;
 
+#define sbos(n) ((((int16_t)(n) & 0xff)<<8)					| \
+				 (((int16_t)(n) & 0xff00)>>8))
+
+#define sbous(n) ((((uint16_t)(n) & 0xff)<<8)				| \
+				  (((uint16_t)(n) & 0xff00)>>8))
+
+#define sboi(n) ((((int32_t)(n) & 0x000000ff)<<24)			| \
+				 (((int32_t)(n) & 0x0000ff00)<<8)			| \
+				 (((int32_t)(n) & 0x00ff0000)>>8)			| \
+				 (((int32_t)(n) & 0xff000000)>>24))
+
+#define sboui(n) ((((uint32_t)(n) & 0x000000ff)<<24)		| \
+				  (((uint32_t)(n) & 0x0000ff00)<<8)			| \
+				  (((uint32_t)(n) & 0x00ff0000)>>8)			| \
+				  (((uint32_t)(n) & 0xff000000)>>24))
+
+#define sboli(n) ((((int64_t)(n) & 0x00000000000000ff)<<56) | \
+				  (((int64_t)(n) & 0x000000000000ff00)<<40) | \
+				  (((int64_t)(n) & 0x0000000000ff0000)<<24) | \
+				  (((int64_t)(n) & 0x00000000ff000000)<<8)	| \
+				  (((int64_t)(n) & 0x000000ff00000000)>>8)	| \
+				  (((int64_t)(n) & 0x0000ff0000000000)>>24) | \
+				  (((int64_t)(n) & 0x00ff000000000000)>>40) | \
+				  (((int64_t)(n) & 0xff00000000000000)>>56))
+
+#define sbouli(n) ((((uint64_t)(n) & 0x00000000000000ff)<<56) | \
+				   (((uint64_t)(n) & 0x000000000000ff00)<<40) | \
+				   (((uint64_t)(n) & 0x0000000000ff0000)<<24) | \
+				   (((uint64_t)(n) & 0x00000000ff000000)<<8)  | \
+				   (((uint64_t)(n) & 0x000000ff00000000)>>8)  | \
+				   (((uint64_t)(n) & 0x0000ff0000000000)>>24) | \
+				   (((uint64_t)(n) & 0x00ff000000000000)>>40) | \
+				   (((uint64_t)(n) & 0xff00000000000000)>>56))
+
 class OByteArray;
 
 /**	This is a simple class that allows the OByteArray class to intrusively 
@@ -95,12 +129,17 @@ protected:
  *	\endcode
 */
 class OByteArray {
+	friend class OTcpSocket;
+	friend class OPipe;
+	friend class OUdpSocket;
+	friend class OSerial;
 public:
 	/**	Create a OByteArray with a default length of 10 or
 	 *	n bytes;
 	 *	@param n The length of the array to start with.
+	 *	@param end The endianness of the data stored in this byte array.
 	*/
-	explicit OByteArray(int n = 10);
+	explicit OByteArray(int n = 10, OO::Endian end = OO::LittleEndian);
 	
 	/**	The copy constructor.
 	 *	@param old The OByteArray obect being copied.
@@ -126,26 +165,26 @@ public:
 		return *this;
 	}
 	
-	void append(OByteArray& ba);
-	void append(OByteArray&& ba);
-	void append(const OString& str);
-	void append(const OString&& str);
-	void append(const string str);
-	void append(const char* str);
-	void append(const char* str, int len);
-	void append(OSerializable& obj);
+	void write(OByteArray& ba);
+	void write(OByteArray&& ba);
+	void write(const OString& str);
+	void write(const OString&& str);
+	void write(const string str);
+	void write(const char* str);
+	void write(const char* str, int len);
+	void write(OSerializable& obj);
 	
-	void append(bool i);
-	void append(int8_t i);
-	void append(int16_t i);
-	void append(int32_t i);
-	void append(int64_t i);
-	void append(uint8_t i);
-	void append(uint16_t i);
-	void append(uint32_t i);
-	void append(uint64_t i);
+	void write(bool i);
+	void write(int8_t i);
+	void write(int16_t i);
+	void write(int32_t i);
+	void write(int64_t i);
+	void write(uint8_t i);
+	void write(uint16_t i);
+	void write(uint32_t i);
+	void write(uint64_t i);
 	
-	template <class T> void append(const vector<T>& vec) {
+	template <class T> void write(const vector<T>& vec) {
 		OByteArray& arr = *this;
 		uint32_t length = vec.size();
 		arr<<length;
@@ -153,7 +192,7 @@ public:
 			arr<<(T&)(vec[i]);
 	}
 	
-	template <class T, class U> void append(const map<T, U>& ma) {
+	template <class T, class U> void write(const map<T, U>& ma) {
 		OByteArray& arr = *this;
 		uint32_t length = ma.size();
 		arr<<length;
@@ -182,14 +221,24 @@ public:
 	OByteArray& operator<<(OByteArray& data);
 	
 	template <class T> OByteArray& operator<<(const vector<T>& vec) {
-		this->append(vec);
+		this->write(vec);
 		return *this;
 	}
 	
 	template <class T, class U> OByteArray& operator<<(const map<T, U>& ma) {
-		this->append(ma);
+		this->write(ma);
 		return *this;
 	}
+	
+	void prepend(bool i);
+	void prepend(int8_t i);
+	void prepend(int16_t i);
+	void prepend(int32_t i);
+	void prepend(int64_t i);
+	void prepend(uint8_t i);
+	void prepend(uint16_t i);
+	void prepend(uint32_t i);
+	void prepend(uint64_t i);
 	
 	OByteArray& operator>>(char& i);
 	OByteArray& operator>>(bool& i);
@@ -278,13 +327,13 @@ public:
 	 *	@param size The size of the pieces that we are making.
 	 *	@param cbk The functor to be called so data may be packed
 	 *	to to the beginning of the OByteArray before the chunk
-	 *	is appended.
+	 *	is writeed.
 	 *	\code
 	 *	OByteArray dat;
 	 *	/// Fill 'dat' with some data.
 	 *	OByteList list = dat.chunkWithHeader(1000
 	 *					[](OByteArray& array, int index, int size)->void{
-	 *		//append a header to the chunks so when the data is sent over
+	 *		//write a header to the chunks so when the data is sent over
 	 *		//the network or serial port the receiving side knows how to 
 	 *		//handle the packets
 	 *		unsigned char packetType = 10;
@@ -309,11 +358,11 @@ public:
 	 *	@param size The size of the pieces that we are making.
 	 *	@param cbk The functor to be called so data may be packed
 	 *	to to the beginning of the OByteArray before the chunk
-	 *	is appended.
+	 *	is writeed.
 	 *	\code
 	 *	OByteList list = OByteArray::chunkFileWithHeader("test.dat", 1000
 	 *					[](OByteArray& array, int index, int size)->void{
-	 *		//append a header to the chunks so when the data is sent over
+	 *		//write a header to the chunks so when the data is sent over
 	 *		//the network or serial port the receiving side knows how to 
 	 *		//handle the packets
 	 *		unsigned char packetType = 10;
@@ -360,18 +409,6 @@ public:
 	*/
 	void seek(int pos, OO::IOBase base = OO::beg);
 	
-	/**	Advance the stream pointer.
-	 *	@param addition The amount by which to increment the
-	 *	stream pointer.
-	*/
-	void advance(int addition);
-	
-	/**	Advance the size of the data in the array.
-	 *	@param The amount by which to increment the recorded
-	 *	amount of data in the binary array.
-	*/
-	void advanceSize(int addition);
-	
 	/**	Get a pointer to the data at the current position of the
 	 *	stream pointer.
 	*/
@@ -402,17 +439,142 @@ public:
 	 */
 	void clear();
 	
+	/**	Get the endianness of the data stored in the array.
+	*/
+	OO::Endian endian() const;
+	
+	/**	Set the endianness of the data stored in the array.
+	 *	Setting the endianness effects the next read and
+	 *	write operations.
+	*/
+	void setEndian(OO::Endian end);
+	
 protected:
+	
+	void seekCurrent(int len);
+	void seekBegin(int len);
+	void seekEnd(int len);
+	
+	/// Seek function switch.
+	static void (OByteArray::*seekSwitch[])(int);
+	
+	/**	Advance the size of the data in the array.
+	 *	@param addition If the data being written exceeds the
+	 *	current amount of data in the array, the amount of 
+	 *	recorded data will be increased to reflect the write.
+	*/
+	void advanceSize(int addition);
+	
+#if defined(__LITTLE_ENDIAN__)	|| \
+	defined(i686)				|| \
+	defined(__i686)				|| \
+	defined(__i686__)			|| \
+	defined(i386)				|| \
+	defined(__i386)				|| \
+	defined(__i386__)
+	
+	//host byte ordering to little endian
+	int16_t htole(int16_t i) { return i; }
+	uint16_t htole(uint16_t i) { return i; }
+	
+	int32_t htole(int32_t i) { return i; }
+	uint32_t htole(uint32_t i) { return i; }
+	
+	int64_t htole(int64_t i) { return i; }
+	uint64_t htole(uint64_t i) { return i; }
+	
+	//host byte ordering to big endian
+	int16_t htobe(int16_t i) { return sbos(i); }
+	uint16_t htobe(uint16_t i) { return sbous(i); }
+	
+	int32_t htobe(int32_t i) { return sboi(i); }
+	uint32_t htobe(uint32_t i) { return sboui(i); }
+	
+	int64_t htobe(int64_t i) { return sboli(i); }
+	uint64_t htobe(uint64_t i) { return sbouli(i); }
+	
+	//little endian to host byte ordering
+	int16_t letoh(int16_t i) { return i; }
+	uint16_t letoh(uint16_t i) { return i; }
+	
+	int32_t letoh(int32_t i) { return i; }
+	uint32_t letoh(uint32_t i) { return i; }
+	
+	int64_t letoh(int64_t i) { return i; }
+	uint64_t letoh(uint64_t i) { return i; }
+	
+	//big endian to host byte ordering
+	int16_t betoh(int16_t i) { return sbos(i); }
+	uint16_t betoh(uint16_t i) { return sbous(i); }
+	
+	int32_t betoh(int32_t i) { return sboi(i); }
+	uint32_t betoh(uint32_t i) { return sboui(i); }
+	
+	int64_t betoh(int64_t i) { return sboli(i); }
+	uint64_t betoh(uint64_t i) { return sbouli(i); }
+	
+#else
+	
+	//host byte ordering to little endian
+	int16_t htole(int16_t i) { return sbos(i); }
+	uint16_t htole(uint16_t i) { return sbous(i); }
+	
+	int32_t htole(int32_t i) { return sboi(i); }
+	uint32_t htole(uint32_t i) { return sboui(i); }
+	
+	int64_t htole(int64_t i) { return sboli(i); }
+	uint64_t htole(uint64_t i) { return sbouli(i); }
+	
+	//host byte ordering to big endian
+	int16_t htobe(int16_t i) { return i; }
+	uint16_t htobe(uint16_t i) { return i; }
+	
+	int32_t htobe(int32_t i) { return i; }
+	uint32_t htobe(uint32_t i) { return i; }
+	
+	int64_t htobe(int64_t i) { return i; }
+	uint64_t htobe(uint64_t i) { return i; }
+	
+	//little endian to host byte ordering
+	int16_t letoh(int16_t i) { return sbos(i); }
+	uint16_t letoh(uint16_t i) { return sbous(i); }
+	
+	int32_t letoh(int32_t i) { return sboi(i); }
+	uint32_t letoh(uint32_t i) { return sboui(i); }
+	
+	int64_t letoh(int64_t i) { return sboli(i); }
+	uint64_t letoh(uint64_t i) { return sbouli(i); }
+	
+	//big endian to host byte ordering
+	int16_t betoh(int16_t i) { return i; }
+	uint16_t betoh(uint16_t i) { return i; }
+	
+	int32_t betoh(int32_t i) { return i; }
+	uint32_t betoh(uint32_t i) { return i; }
+	
+	int64_t v(int64_t i) { return i; }
+	uint64_t betoh(uint64_t i) { return i; }
+	
+#endif
+	
+	
 	struct OByteArrayMem {
 		OByteArrayMem(int len) : bytearray(new char[len]) {
 			sizeofdata = 0;
 			sizeofarray = len;
+			end = OO::LittleEndian;
 		}
 		
-		int sizeofdata;		//the amount of data being stored
-		int sizeofarray;	//the size of the memory being pointed to
-		boost::scoped_array<char> bytearray;	//a pointer to the data
+		//the amount of data being stored
+		int sizeofdata;
+		//the size of the memory being pointed to
+		int sizeofarray;
+		//the amount of memory before the origin
+		int sizeofprepend;
+		//a pointer to the data
+		boost::scoped_array<char> bytearray;
 		
+		OO::Endian end;
 		OO::ArrayBase dir;
 	};
 	
@@ -423,6 +585,8 @@ protected:
 	void makeOwner();
 	
 	void checkResize(int addition);
+	
+	void checkPrependResize(int addition);
 	
 };
 

@@ -71,7 +71,7 @@ bool OMacAddress::operator==(OMacAddress&& other) {
 }
 
 OByteArray& operator<<(OByteArray& data, OMacAddress& addr) {
-	data.append(addr.data(), addr.size());
+	data.write(addr.data(), addr.size());
 	return data;
 }
 
