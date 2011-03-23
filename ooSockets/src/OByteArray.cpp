@@ -427,6 +427,14 @@ OByteArray& OByteArray::operator>>(OString& str) {
 	return *this;
 }
 
+OByteArray OByteArray::encrypt(Botan::Public_Key* key) {
+	
+}
+
+OByteArray OByteArray::decrypt(Botan::Public_Key* key) {
+	
+}
+
 bool OByteArray::loadFile(OString fn) {
 	makeOwner();
 	

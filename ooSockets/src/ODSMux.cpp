@@ -21,6 +21,14 @@ void ODataStream::setRecvHandler(uint16_t packetId, function<void (OByteArray)> 
 	}
 }
 
+void ODataStream::setSecurity(uint16_t packetId, bool secure) {
+	if(isInit()) {
+		if(q_mem->q_ique.size() > packetId) {
+			q_mem->q_ique[packetId].setSecure(secure);
+		}
+	}
+}
+
 uint16_t ODataStream::priority(uint16_t packetId) {
 	if(isInit()) {
 		if(q_mem->q_ique.size() > packetId)

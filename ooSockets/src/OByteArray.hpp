@@ -38,6 +38,9 @@
 #include<boost/crc.hpp>
 #include<boost/scoped_array.hpp>
 
+#include<botan/botan.h>
+#include<botan/rsa.h>
+
 #include<OString.hpp>
 
 #ifndef __windows__
@@ -47,22 +50,27 @@
 
 using namespace std;
 
+//swap byte order short
 #define sbos(n) ((((int16_t)(n) & 0xff)<<8)					| \
 				 (((int16_t)(n) & 0xff00)>>8))
 
+//swap byte order unsigned short
 #define sbous(n) ((((uint16_t)(n) & 0xff)<<8)				| \
 				  (((uint16_t)(n) & 0xff00)>>8))
 
+//swap byte order int
 #define sboi(n) ((((int32_t)(n) & 0x000000ff)<<24)			| \
 				 (((int32_t)(n) & 0x0000ff00)<<8)			| \
 				 (((int32_t)(n) & 0x00ff0000)>>8)			| \
 				 (((int32_t)(n) & 0xff000000)>>24))
 
+//swap byte order unsigned int
 #define sboui(n) ((((uint32_t)(n) & 0x000000ff)<<24)		| \
 				  (((uint32_t)(n) & 0x0000ff00)<<8)			| \
 				  (((uint32_t)(n) & 0x00ff0000)>>8)			| \
 				  (((uint32_t)(n) & 0xff000000)>>24))
 
+//swap byte order long int
 #define sboli(n) ((((int64_t)(n) & 0x00000000000000ff)<<56) | \
 				  (((int64_t)(n) & 0x000000000000ff00)<<40) | \
 				  (((int64_t)(n) & 0x0000000000ff0000)<<24) | \
@@ -72,6 +80,7 @@ using namespace std;
 				  (((int64_t)(n) & 0x00ff000000000000)>>40) | \
 				  (((int64_t)(n) & 0xff00000000000000)>>56))
 
+//swap byte order unsigned long int
 #define sbouli(n) ((((uint64_t)(n) & 0x00000000000000ff)<<56) | \
 				   (((uint64_t)(n) & 0x000000000000ff00)<<40) | \
 				   (((uint64_t)(n) & 0x0000000000ff0000)<<24) | \
@@ -240,6 +249,8 @@ public:
 	void prepend(uint32_t i);
 	void prepend(uint64_t i);
 	
+	
+	
 	OByteArray& operator>>(char& i);
 	OByteArray& operator>>(bool& i);
 	OByteArray& operator>>(uint8_t& i);
@@ -250,8 +261,6 @@ public:
 	OByteArray& operator>>(int16_t& i);
 	OByteArray& operator>>(int32_t& i);
 	OByteArray& operator>>(int64_t& i);
-	
-	
 	OByteArray& operator>>(OSerializable& obj);
 	OByteArray& operator>>(OString& str);
 	
@@ -264,6 +273,8 @@ public:
 		this->read(ma);
 		return *this;
 	}
+	
+	
 	
 	template <class T> void read(vector<T>& vec) {
 		vec.clear();
@@ -295,6 +306,10 @@ public:
 			ma[key] = value;
 		}
 	}
+	
+	OByteArray encrypt(Botan::Public_Key* key);
+	
+	OByteArray decrypt(Botan::Public_Key* key);
 	
 	/**	Load the binary data into this data container.
 	 *	@param fn The name of the file to load.

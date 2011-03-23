@@ -68,6 +68,10 @@
 #ifndef OO_QT
 #define OO_QT
 #endif
+
+#ifndef OO_BOTAN
+#define OO_BOTAN
+#endif
 	
 #endif
 
@@ -108,6 +112,10 @@ namespace OO {
 	enum Endian {
 		BigEndian,
 		LittleEndian
+	};
+	
+	enum Encryption {
+		RSA
 	};
 	
 	enum IOBase {

@@ -59,10 +59,15 @@ protected:
 	protected:
 		class ODSQueueMem {
 		public:
+			ODSQueueMem() {
+				q_secure = false;
+			}
+			
 			
 			list<OByteArray>					q_que;
 			mutex								q_mutex;
 			uint16_t							q_priority;
+			bool								q_secure;
 		};
 	public:
 		ODSQueue() {}
@@ -78,6 +83,15 @@ protected:
 		
 		bool isInit() {
 			return q_mem.get();
+		}
+		
+		bool isSecure() {
+			return q_mem->q_secure;
+		}
+		
+		bool setSecure(bool secure) {
+			if(isInit())
+				q_mem->q_secure = secure;
 		}
 		
 		bool isEmpty() {
@@ -136,6 +150,9 @@ protected:
 		//array offset is the id of the packet, value is the function
 		//to be called to handle the data
 		vector<function<void (OByteArray)>>	q_handlers;
+		
+		//the encryption key for sending secure information
+		Botan::RSA_PublicKey* key;
 	};
 public:
 	explicit ODataStream(OThread* parent);
@@ -156,6 +173,8 @@ public:
 	 *	@param cbk The function to be bound to the unique identifier.
 	*/
 	void setRecvHandler(uint16_t packetId, function<void (OByteArray)> cbk);
+	
+	void setSecurity(uint16_t packetId, bool secure);
 	
 	/**	Get the priority associated with a packet id.
 	 *	@return The numeric value for the priority of the packet. Larger number
