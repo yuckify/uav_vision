@@ -2,8 +2,6 @@
 #define MAINTHREAD_H
 
 #include<deque>
-//#include<thread>
-//#include<mutex>
 #include<sys/types.h>
 #include<memory>
 
@@ -24,7 +22,7 @@ namespace bst = boost;
 #include<OTimer.hpp>
 #include<OSocket.hpp>
 #include<ONet.hpp>
-
+#include<ODataStream.hpp>
 
 #include"VideoThread.h"
 #include"Defs.h"
@@ -83,6 +81,8 @@ private:
 	void groundReadyWrite();
 	void groundError();
 	void handlePacket(OByteArray& pack);
+	
+	ODataStream<false, uint16_t, uint8_t> gc;
 	
 	
 	//this structure and these functions are for packet switching

@@ -64,6 +64,10 @@ public:
 	*/
 	OTcpSocket(OThread* parent = 0);
 	
+#ifdef OO_QT
+	OTcpSocket(QObject* parent);
+#endif
+	
 	/**	Open a connection to a host.
 	 *	@param addr The string address of the host to connect to.
 	 *	@param port The port on which to connect.
@@ -82,6 +86,10 @@ public:
 	 *	@param info The information of the host to connect to.
 	*/
 	bool connect(const OAddressInfo& info);
+	
+	void read(OByteArray& data, int len);
+	
+	void readAll(OByteArray &data);
 	
 	/**	Read some data from the socket.
 	 *	@param data The container to store the binary data in.

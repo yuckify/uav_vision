@@ -88,7 +88,7 @@ public:
 	 *	@param len The number of characters to use from the
 	 *	initializing string.
 	*/
-	OString(const char* str, int len);
+	explicit OString(const char* str, int len);
 	
 	/*!	This constructor initializes this OString with another
 	 *	OString.

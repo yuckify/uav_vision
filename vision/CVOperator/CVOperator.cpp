@@ -21,7 +21,7 @@ CVOperator::CVOperator(QWidget *parent) :
 	//setup the image update timer
 	QTimer* iutimer = new QTimer(this);
 	connect(iutimer, SIGNAL(timeout()), this, SLOT(updateImageDb()));
-	iutimer->start(500);
+//	iutimer->start(500);
 	
 	
 	//setup the File menu list
@@ -299,12 +299,21 @@ void CVOperator::camera_zin() {
 		PacketType type = CameraZoomIn;
 		PacketLength length = 0;
 		int zoomlen = 1;
-		
+		cout<<"tell: " <<pack.tell() <<endl;
+		cout<<"dat: " <<(void*)pack.data() <<endl;
 		pack<<length <<type <<zoomlen;
+		cout<<"dat: " <<(void*)pack.data() <<endl;
+		cout<<"cz: " <<CameraZoomIn <<endl;
+		cout<<"size: " <<pack.size() <<endl;
 		
 		pack.seek(0);
 		length = pack.size() - sizeof(PacketLength);
 		pack<<length;
+		pack.seek(0);
+		
+		for(auto i=pack.begin(); i<pack.end(); i++) {
+			cout<<(int)*((unsigned char*)i) <<" ";
+		}cout<<endl;
 		
 		conn->write(pack);
 	}

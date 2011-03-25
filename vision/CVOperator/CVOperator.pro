@@ -87,5 +87,6 @@ HEADERS += CVOperator.h \
     ../common/ImageDatabase.h \
     LogWidget.h \
     ../../ooSockets/src/ODSMux.h \
-    ../../ooSockets/src/OCompatibility.hpp
+    ../../ooSockets/src/OCompatibility.hpp \
+    ../../ooSockets/src/ODataStream.hpp
 FORMS += CVOperator.ui

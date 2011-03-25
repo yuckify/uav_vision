@@ -69,9 +69,8 @@ enum Packet {
 	Telemetry,
 	
 	//high resolutions image details
-	ImageList,
 	ImageDetails,
-	ImageSeg,
+	Image,
 	
 	CompressionMethod,
 	ErrorMsg,

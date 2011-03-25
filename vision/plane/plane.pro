@@ -91,7 +91,9 @@ SOURCES += main.cpp \
     ../../ooSockets/src/OAddressInfo.cpp \
     ../common/ImageDatabase.cpp \
     ../../ooSockets/src/OTime.cpp \
-    ../../ooSockets/src/OCompatibility.cpp
+    ../../ooSockets/src/OCompatibility.cpp \
+    ../../ooSockets/src/ODSMux.cpp \
+    ../../ooSockets/src/ODataStream.cpp
 HEADERS += MainThread.h \
     VideoThread.h \
     ../../ooSockets/src/OVersion.hpp \
@@ -121,4 +123,6 @@ HEADERS += MainThread.h \
     ../common/Defs.h \
     ../common/ImageDatabase.h \
     ../../ooSockets/src/OTime.hpp \
-    ../../ooSockets/src/OCompatibility.hpp
+    ../../ooSockets/src/OCompatibility.hpp \
+    ../../ooSockets/src/ODSMux.h \
+    ../../ooSockets/src/ODataStream.hpp

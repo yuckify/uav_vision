@@ -147,8 +147,13 @@ public:
 	 *	n bytes;
 	 *	@param n The length of the array to start with.
 	 *	@param end The endianness of the data stored in this byte array.
+	 *	@param p The amount of free data preceding the beinning of the 
+	 *	data container. This is allocated so a couple small pieces of data
+	 *	may be appended to the beginning of the array with no memory 
+	 *	reallocation penalty. If large amounts of data are prepended
+	 *	the binary data container will expand to accommodate.
 	*/
-	explicit OByteArray(int n = 10, OO::Endian end = OO::LittleEndian);
+	explicit OByteArray(int n = 30, OO::Endian end = OO::LittleEndian, int p = 20);
 	
 	/**	The copy constructor.
 	 *	@param old The OByteArray obect being copied.
@@ -160,10 +165,27 @@ public:
 	 *	@param len The amount of data to be used in bytes.
 	*/
 	explicit OByteArray(const char* data, int len);
-	explicit OByteArray(const char* str);
-	explicit OByteArray(const OString& str);
+	
+	/**	Initialize a OByteArray with a string.
+	*/
+	OByteArray(const char* str);
+	
+	/// This function is overloaded.
+	OByteArray(const OString& str);
+	
+	/// This function is overloaded.
+	OByteArray(OSerializable& ser, OO::Endian endian = OO::LittleEndian);
+	
 	~OByteArray();
 	
+	/**	To serialize/deserialize a class/struct it must inherit
+	 *	OSerializable. The function serialize() must be defined.
+	 *	This function ( operator&() ) is primarily intended to be used
+	 *	inside the serialize() function inside a class. This 
+	 *	interface allows the developer to write a function to easily 
+	 *	recursively serialize/deserialize a class without being 
+	 *	required to know which operation is performed.
+	*/
 	template <class T> OByteArray& operator&(T& item) {
 		OByteArray& arr = *this;
 		if(mem->dir == OO::Input) {
@@ -174,25 +196,60 @@ public:
 		return *this;
 	}
 	
+	/**	This function writes a piece of data at the current position
+	 *	of the stream pointer.
+	*/
 	void write(OByteArray& ba);
+	
+	/// This function is overloaded.
 	void write(OByteArray&& ba);
+	
+	/// This function is overloaded.
 	void write(const OString& str);
+	
+	/// This function is overloaded.
 	void write(const OString&& str);
+	
+	/// This function is overloaded.
 	void write(const string str);
+	
+	/// This function is overloaded.
 	void write(const char* str);
+	
+	/// This function is overloaded.
 	void write(const char* str, int len);
+	
+	/// This function is overloaded.
 	void write(OSerializable& obj);
 	
+	/// This function is overloaded.
 	void write(bool i);
+	
+	/// This function is overloaded.
 	void write(int8_t i);
+	
+	/// This function is overloaded.
 	void write(int16_t i);
+	
+	/// This function is overloaded.
 	void write(int32_t i);
+	
+	/// This function is overloaded.
 	void write(int64_t i);
+	
+	/// This function is overloaded.
 	void write(uint8_t i);
+	
+	/// This function is overloaded.
 	void write(uint16_t i);
+	
+	/// This function is overloaded.
 	void write(uint32_t i);
+	
+	/// This function is overloaded.
 	void write(uint64_t i);
 	
+	/// This function is overloaded.
 	template <class T> void write(const vector<T>& vec) {
 		OByteArray& arr = *this;
 		uint32_t length = vec.size();
@@ -201,6 +258,7 @@ public:
 			arr<<(T&)(vec[i]);
 	}
 	
+	/// This function is overloaded.
 	template <class T, class U> void write(const map<T, U>& ma) {
 		OByteArray& arr = *this;
 		uint32_t length = ma.size();
@@ -211,71 +269,184 @@ public:
 		});
 	}
 	
-	OByteArray& operator<<(bool i);
-	OByteArray& operator<<(int8_t i);
-	OByteArray& operator<<(int16_t i);
-	OByteArray& operator<<(int32_t i);
-	OByteArray& operator<<(int64_t i);
-	OByteArray& operator<<(uint8_t i);
-	OByteArray& operator<<(uint16_t i);
-	OByteArray& operator<<(uint32_t i);
-	OByteArray& operator<<(uint64_t i);
+	/**	This function writes a piece of data at the current position
+	 *	of the stream pointer. Calling this function is provided
+	 *	for convenience to stream in a large number of objects. This
+	 *	function is otherwise the same as calling write().
+	 *	@see OByteArray::write()
+	*/
+	template<class T> OByteArray& operator<<(T&& item) {
+		write(item);
+		return *this;
+	}
 	
-	
-	OByteArray& operator<<(OSerializable& obj);
-	OByteArray& operator<<(const char* str);
-	OByteArray& operator<<(string& str);
-	OByteArray& operator<<(OString& str);
-	OByteArray& operator<<(OString&& str);
-	OByteArray& operator<<(OByteArray& data);
-	
+	/// This function is overloaded.
 	template <class T> OByteArray& operator<<(const vector<T>& vec) {
 		this->write(vec);
 		return *this;
 	}
 	
+	/// This function is overloaded.
 	template <class T, class U> OByteArray& operator<<(const map<T, U>& ma) {
 		this->write(ma);
 		return *this;
 	}
 	
+	/**	Append a piece of data to the very beginning of the binary array.
+	 *	This is allocated so a couple small pieces of data
+	 *	may be appended to the beginning of the array with no memory 
+	 *	reallocation penalty. If large amounts of data are prepended
+	 *	the binary data container will expand to accommodate.
+	*/
+	void prepend(OByteArray& ba);
+	
+	/// This function is overloaded.
+	void prepend(OByteArray&& ba);
+	
+	/// This function is overloaded.
+	void prepend(const OString& str);
+	
+	/// This function is overloaded.
+	void prepend(const OString&& str);
+	
+	/// This function is overloaded.
+	void prepend(const string str);
+	
+	/// This function is overloaded.
+	void prepend(const char* str);
+	
+	/// This function is overloaded.
+	void prepend(const char* str, int len);
+	
+	/// This function is overloaded.
 	void prepend(bool i);
+	
+	/// This function is overloaded.
 	void prepend(int8_t i);
+	
+	/// This function is overloaded.
 	void prepend(int16_t i);
+	
+	/// This function is overloaded.
 	void prepend(int32_t i);
+	
+	/// This function is overloaded.
 	void prepend(int64_t i);
+	
+	/// This function is overloaded.
 	void prepend(uint8_t i);
+	
+	/// This function is overloaded.
 	void prepend(uint16_t i);
+	
+	/// This function is overloaded.
 	void prepend(uint32_t i);
+	
+	/// This function is overloaded.
 	void prepend(uint64_t i);
 	
+	/**	Append a piece of data to the very end of a binary array.
+	 *	
+	*/
+	void append(OByteArray& ba);
 	
+	/// This function is overloaded.
+	void append(OByteArray&& ba);
 	
-	OByteArray& operator>>(char& i);
-	OByteArray& operator>>(bool& i);
-	OByteArray& operator>>(uint8_t& i);
-	OByteArray& operator>>(uint16_t& i);
-	OByteArray& operator>>(uint32_t& i);
-	OByteArray& operator>>(uint64_t& i);
-	OByteArray& operator>>(int8_t& i);
-	OByteArray& operator>>(int16_t& i);
-	OByteArray& operator>>(int32_t& i);
-	OByteArray& operator>>(int64_t& i);
-	OByteArray& operator>>(OSerializable& obj);
-	OByteArray& operator>>(OString& str);
+	/// This function is overloaded.
+	void append(const OString& str);
 	
-	template <class T> OByteArray& operator>>(vector<T>& vec) {
-		this->read(vec);
+	/// This function is overloaded.
+	void append(const OString&& str);
+	
+	/// This function is overloaded.
+	void append(const string str);
+	
+	/// This function is overloaded.
+	void append(const char* str);
+	
+	/// This function is overloaded.
+	void append(const char* str, int len);
+	
+	/// This function is overloaded.
+	void append(OSerializable& obj);
+	
+	/// This function is overloaded.
+	void append(bool i);
+	
+	/// This function is overloaded.
+	void append(int8_t i);
+	
+	/// This function is overloaded.
+	void append(int16_t i);
+	
+	/// This function is overloaded.
+	void append(int32_t i);
+	
+	/// This function is overloaded.
+	void append(int64_t i);
+	
+	/// This function is overloaded.
+	void append(uint8_t i);
+	
+	/// This function is overloaded.
+	void append(uint16_t i);
+	
+	/// This function is overloaded.
+	void append(uint32_t i);
+	
+	/// This function is overloaded.
+	void append(uint64_t i);
+	
+	/**	This function writes a piece of data at the end of the binary
+	 *	array. Calling this function is provided for convenience to 
+	 *	stream in a large number of objects. This function is otherwise 
+	 *	the same as calling append().
+	 *	@see OByteArray::append()
+	*/
+	template<class T> OByteArray& operator|(T& item) {
+		append(item);
 		return *this;
 	}
 	
-	template <class T, class U> OByteArray& operator>>(map<T, U>& ma) {
-		this->read(ma);
-		return *this;
-	}
+	/**	Read a piece of data at the position of the stream pointer.
+	*/
+	void read(bool& i);
 	
+	/// This function is overloaded.
+	void read(char& i);
 	
+	/// This function is overloaded.
+	void read(int8_t& i);
 	
+	/// This function is overloaded.
+	void read(int16_t& i);
+	
+	/// This function is overloaded.
+	void read(int32_t& i);
+	
+	/// This function is overloaded.
+	void read(int64_t& i);
+	
+	/// This function is overloaded.
+	void read(uint8_t& i);
+	
+	/// This function is overloaded.
+	void read(uint16_t& i);
+	
+	/// This function is overloaded.
+	void read(uint32_t& i);
+	
+	/// This function is overloaded.
+	void read(uint64_t& i);
+	
+	/// This function is overloaded.
+	void read(OSerializable& obj);
+	
+	/// This function is overloaded.
+	void read(OString& str);
+	
+	/// This function is overloaded.
 	template <class T> void read(vector<T>& vec) {
 		vec.clear();
 		
@@ -290,6 +461,7 @@ public:
 		}
 	}
 	
+	/// This function is overloaded.
 	template <class T, class U> void read(map<T, U>& ma) {
 		ma.clear();
 		
@@ -305,6 +477,17 @@ public:
 			
 			ma[key] = value;
 		}
+	}
+	
+	/**	This function reads a piece of data at the position of the 
+	 *	stream pointer. Calling this function is provided for convenience to 
+	 *	stream out a large number of objects. This function is otherwise 
+	 *	the same as calling read().
+	 *	@see OByteArray::read()
+	*/
+	template<class T> OByteArray& operator>>(T& item) {
+		read(item);
+		return *this;
 	}
 	
 	OByteArray encrypt(Botan::Public_Key* key);
@@ -464,6 +647,13 @@ public:
 	*/
 	void setEndian(OO::Endian end);
 	
+	typedef char* Iterator;
+	typedef const char* ConstIterator;
+	Iterator end();
+	Iterator begin();
+	ConstIterator end() const;
+	ConstIterator begin() const;
+	
 protected:
 	
 	void seekCurrent(int len);
@@ -479,6 +669,8 @@ protected:
 	 *	recorded data will be increased to reflect the write.
 	*/
 	void advanceSize(int addition);
+	
+	void advanceSizePrepend(int addition);
 	
 #if defined(__LITTLE_ENDIAN__)	|| \
 	defined(i686)				|| \
@@ -574,7 +766,9 @@ protected:
 	
 	
 	struct OByteArrayMem {
-		OByteArrayMem(int len) : bytearray(new char[len]) {
+		OByteArrayMem(int len, int p = 20) {
+			sizeofprepend = p;
+			bytearray.reset(new char[len + sizeofprepend]);
 			sizeofdata = 0;
 			sizeofarray = len;
 			end = OO::LittleEndian;
@@ -600,8 +794,7 @@ protected:
 	void makeOwner();
 	
 	void checkResize(int addition);
-	
-	void checkPrependResize(int addition);
+	void checkResizePrepend(int addition);
 	
 };
 

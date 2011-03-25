@@ -244,7 +244,7 @@ public:
 	OO::HANDLE fileDescriptor() const;
 	
 	///	Set the BSD file descriptor for this socket.
-	void fileDescriptor(OO::HANDLE des);
+	void setFileDescriptor(OO::HANDLE des);
 	
 	/// Get the parent thread for this socket.
 	OThread* parent();
@@ -345,8 +345,8 @@ protected:
 	/// This is the parent of this objec, for QT compatibility.
 	QObject* qtpar;
 	
-	auto_ptr<QSocketNotifier> qt_read;
-	auto_ptr<QSocketNotifier> qt_write;
+	unique_ptr<QSocketNotifier> qt_read;
+	unique_ptr<QSocketNotifier> qt_write;
 	
 	/// This is kind of a hack... This is set by subclass OTcpServer
 	/// so when the QSocketNotifier sends a signal that there is
@@ -437,16 +437,13 @@ protected:
 #endif
 	
 	function<void (OSockError)> tmp;
-	void dummyErrFunc(OSockError i) {
-		
-	}
 	
 	/// to enable the error signal when we want it to begin emitting the
 	/// error signal
 	void enableErrorSig() {
-		if(!esigstat && errorCbk) {
+		if(!esigstat) {
 			tmp = errorCbk;
-			errorCbk = bind(&OSocket::dummyErrFunc, this, _1);
+			errorCbk = NULL;
 			esigstat = true;
 		}
 	}
@@ -455,7 +452,7 @@ protected:
 	/// for example when a function is being called internally but
 	/// we don't want it to emit any error signals
 	void disableErrorSig() {
-		if(esigstat && errorCbk) {
+		if(esigstat) {
 			errorCbk = tmp;
 			esigstat = false;
 		}

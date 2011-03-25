@@ -7,7 +7,8 @@ void DebugMsg(OString str) {
 }
 
 MainThread::MainThread() :
-	initserial(this), initsertimer(this), multTimer(this), cameratimer(this) {
+	initserial(this), initsertimer(this), multTimer(this), 
+	cameratimer(this), gc(this) {
 	//setup the database files
 	if(bfs::is_directory(DBPATH)) {
 		//if the directory exists then this is not a cold start
@@ -74,6 +75,44 @@ MainThread::MainThread() :
 	//setup the serial connection to the arduino, so we can send it commands
 	//to control the camera
 	arduino.reset(new OSerial());
+	
+	//**************************************************
+	//
+	//**************************************************
+	
+	gc.setRecvHandler(ImageDetails, [](OByteArray data)->void{
+		cout<<"ImageDetails" <<endl;
+	});
+	
+	gc.setRecvHandler(CompressionMethod, [](OByteArray data)->void{
+		cout<<"CompessionMethod" <<endl;
+	});
+	
+	gc.setRecvHandler(CameraZoomIn, [](OByteArray data)->void{
+		cout<<"CameraZoomIn" <<endl;
+	});
+	
+	gc.setRecvHandler(CameraZoomOut, [](OByteArray data)->void{
+		cout<<"CameraZoomOut" <<endl;
+	});
+	
+	gc.setRecvHandler(CameraCapture, [](OByteArray data)->void{
+		cout<<"CameraCapture" <<endl;
+	});
+	
+	gc.setRecvHandler(CameraPower, [](OByteArray data)->void{
+		cout<<"CameraPower" <<endl;
+	});
+	
+	gc.setRecvHandler(CameraDownload, [](OByteArray data)->void{
+		cout<<"CameraDownload" <<endl;
+	});
+	
+	
+	
+	//**************************************************
+	//
+	//**************************************************
 }
 
 void MainThread::multTimeout() {
@@ -92,17 +131,20 @@ void MainThread::incommingConnection(OO::HANDLE fd) {
 	if(!ground) {
 		cout<<"New Ground Socket" <<endl;
 		multTimer.stop();
+		gc.setFileDescriptor(fd);
 		
+		/*
 		ground = new OTcpSocket(this);
 		ground->disconnectFunc(bind(&MainThread::groundDisconnected, this));
 		ground->readyReadFunc(bind(&MainThread::groundReadyRead, this));
 		ground->readyWriteFunc(bind(&MainThread::groundReadyWrite, this));
 		ground->errorFunc(bind(&MainThread::groundError, this));
-		ground->fileDescriptor(fd);
+		ground->setFileDescriptor(fd);
 		
 		if(db.size()) {
 			this->writeImageDb();
 		}
+		*/
 		
 		if(videopacks.size()) ground->enableReadyWrite();
 	}
@@ -212,7 +254,7 @@ void MainThread::handlePacket(OByteArray &pack) {
 			this->writeImageDb();
 			break;
 		}
-		case CompressionMethod: {
+	case CompressionMethod: {
 			OString tmp;
 			pack>>tmp;
 			vthread->setCompression(tmp);

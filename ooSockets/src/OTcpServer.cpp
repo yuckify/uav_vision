@@ -22,7 +22,7 @@ bool OTcpServer::listen(int	port,
 	return OSocket::listen(port, ifn, OO::Tcp, family);
 }
 
-OByteArray OTcpServer::read( int len) {
+OByteArray OTcpServer::read(int len) {
 	return OByteArray();
 }
 

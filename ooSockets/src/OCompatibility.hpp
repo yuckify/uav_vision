@@ -61,6 +61,4 @@ OByteArray& operator>>(OByteArray& data, CvMat*& mat);
 
 #endif
 
-
-
 #endif // OCOMPATIBILITY_HPP

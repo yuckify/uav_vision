@@ -423,6 +423,7 @@ OThread* OSocket::parent() {
 }
 
 void OSocket::setParent(OThread *p) {
+	this->par = p;
 	registerFD();
 }
 
@@ -454,7 +455,7 @@ OSockAddress OSocket::peerAddress() {
 	return recvaddr;
 }
 
-void OSocket::fileDescriptor(OO::HANDLE des) {
+void OSocket::setFileDescriptor(OO::HANDLE des) {
 	//unregister the file descriptor with the parent thread
 	//before we change it
 	unregisterFD();
@@ -611,6 +612,7 @@ void OSocket::readyWriteFunc(function<void ()> cbk) {
 }
 
 void OSocket::readyReadFunc(function<void ()> cbk) {
+	cout<<"reg cbk" <<endl;
 	readyReadCbk = cbk;
 }
 

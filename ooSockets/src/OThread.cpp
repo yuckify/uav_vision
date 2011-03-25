@@ -77,7 +77,7 @@ bool OThread::execOnce() {
 	if(!ret && tout.get()) {
 #endif
 		//adjust the delta values in the list
-		for(auto i=deltalist.end(); i>=deltalist.begin(); i--) {
+		for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
 			i->delta -= deltalist[0].delta;
 		}
 		
