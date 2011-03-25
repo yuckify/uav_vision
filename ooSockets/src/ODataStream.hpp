@@ -131,6 +131,8 @@ protected:
 		//the packet id of the data we need to finish sending
 		uint16_t							q_fpid;
 		
+		OO::Endian							q_end;
+		
 		//the offset in the array is the priority, value is the queue
 		vector<ODSQueue>					q_pque;
 		//the offset in the array is the packetId, value is the queue
@@ -163,6 +165,17 @@ public:
 										  PacketType>::
 										  readyWrite, this));
 										  
+	}
+	
+	void setEndian(OO::Endian end) {
+		if(isInit())
+			q_mem->q_end = end;
+	}
+	
+	OO::Endian endian() const {
+		if(isInit())
+			return q_mem->q_end;
+		return OO::LittleEndian;
 	}
 	
 	OO::HANDLE fileDescriptor() const {
@@ -353,18 +366,17 @@ protected:
 			//first check if we need to read in the header for the next packet
 			if(q_mem->q_readhead) {
 				cout<<"reading" <<endl;
-				//read in the header
-				q_mem->q_head.append(q_mem->q_sock.read(sizeof(PacketLength) + 
-												   sizeof(PacketType) - 
-												   q_mem->q_head.size()));
+				//read in the header which is the size of the length field
+				///minus the amount that has already been read in
+				q_mem->q_sock.read(q_mem->q_head, sizeof(PacketLength) - 
+												q_mem->q_head.size());
 				
 				cout<<"read:"  <<q_mem->q_head.size() <<endl;
 				
 				//readhead = true if head.size() != sizeof(header information)
 				//this bool specifies if we have read in the whole header or
 				//not, true (have not read in header) false (have read in header)
-				q_mem->q_readhead = q_mem->q_head.size() != 
-									  (sizeof(PacketLength) + sizeof(PacketType));
+				q_mem->q_readhead = q_mem->q_head.size() != sizeof(PacketLength);
 				
 				cout<<"readhead: " <<q_mem->q_readhead <<endl;
 				
@@ -378,19 +390,22 @@ protected:
 				
 				//deserialize the header information
 				q_mem->q_head.seek(0);
-				PacketLength tlen;
-				PacketType ttype;
-				q_mem->q_head>>tlen >>ttype;//(q_mem->q_length) >>(q_mem->q_type);
-				cout<<"len: " <<tlen <<" type: " <<(int)ttype <<endl;
-				exit(0);
+				q_mem->q_head>>(q_mem->q_length);
+				cout<<"len: " <<q_mem->q_length <<endl;
+				
 				q_mem->q_head.clear();
 			}
 			
-			//read in some data
-			q_mem->q_data.append(q_mem->q_sock.read(q_mem->q_length - 
-													q_mem->q_data.size()));
+			//read in some data, make sure the new data gets appended
+			//to the block of old data
+			q_mem->q_sock.read(q_mem->q_data, q_mem->q_length - q_mem->q_data.size());
 			
+			cout<<"ds: " <<q_mem->q_data.size() <<endl;
 			if(q_mem->q_data.size() == q_mem->q_length) {
+				//read out the packet type
+				q_mem->q_data>>(q_mem->q_type);
+				cout<<"type: " <<(int)q_mem->q_type <<endl;
+				
 				//if a function is set for this packet signature, call it
 				if(q_mem->q_handlers[q_mem->q_type])
 					q_mem->q_handlers[q_mem->q_type](q_mem->q_data);

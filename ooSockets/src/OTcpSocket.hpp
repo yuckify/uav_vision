@@ -87,9 +87,16 @@ public:
 	*/
 	bool connect(const OAddressInfo& info);
 	
-	void read(OByteArray& data, int len);
+	/**	Read in a set amount of data and append it to the data
+	 *	container passed as an input parameter.
+	*/
+	int read(OByteArray& data, int len);
 	
-	void readAll(OByteArray &data);
+	/**	Read all the data available on the socket and append
+	 *	it to the end of data container passed as an input
+	 *	parameter.
+	*/
+	int readAll(OByteArray& data);
 	
 	/**	Read some data from the socket.
 	 *	@param data The container to store the binary data in.

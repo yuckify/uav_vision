@@ -25,12 +25,23 @@ bool OTcpSocket::connect(const OAddressInfo& info) {
 	return OSocket::connect(addr);
 }
 
-void OTcpSocket::read(OByteArray& data, int len) {
+int OTcpSocket::read(OByteArray& data, int len) {
+	if(len <= 0) return 0;
 	
+	data.resize(len);
+	int recvlen = recv(fdes, data.tellData(), len, 0);
+	if(recvlen != -1) {
+		data.advanceSize(recvlen);
+	} else {
+		//an error occured so report it
+		sigError();
+	}
+	
+	return recvlen;
 }
 
-void OTcpSocket::readAll(OByteArray &data) {
-	
+int OTcpSocket::readAll(OByteArray &data) {
+	return read(data, available());
 }
 
 OByteArray OTcpSocket::read(int len) {
@@ -45,7 +56,7 @@ OByteArray OTcpSocket::read(int len) {
 	ba.resize(len);
 	int recvlen = recv(fdes, ba.data(), len, 0);
 	if(recvlen != -1) {
-		ba.advanceSize(len);
+		ba.advanceSize(recvlen);
 	} else {
 		//an error occured so report it
 		sigError();

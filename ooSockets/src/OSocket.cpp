@@ -2,7 +2,7 @@
 
 bool OSocket::initSockLimit = false;
 
-OSocket::OSocket(OThread *parent) {
+OSocket::OSocket(OThread *parent) : qt_write(NULL) {
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -27,7 +27,7 @@ OSocket::OSocket(OThread *parent) {
 }
 
 #ifdef OO_QT
-OSocket::OSocket(QObject *parent) {
+OSocket::OSocket(QObject *parent) : qt_write(NULL) {
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -87,7 +87,7 @@ bool OSocket::readyWriteEnabled() const {
 
 void OSocket::enableReadyWrite() {
 #ifdef OO_QT
-	if(qt_write.get()) {
+	if(qt_write) {
 		qt_write->setEnabled(true);
 	} else if(fdes && qtpar) {
 		qt_write.reset(new QSocketNotifier(fdes, QSocketNotifier::Write, qtpar));

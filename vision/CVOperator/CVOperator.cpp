@@ -299,22 +299,13 @@ void CVOperator::camera_zin() {
 		PacketType type = CameraZoomIn;
 		PacketLength length = 0;
 		int zoomlen = 1;
-		cout<<"tell: " <<pack.tell() <<endl;
-		cout<<"dat: " <<(void*)pack.data() <<endl;
 		pack<<length <<type <<zoomlen;
-		cout<<"dat: " <<(void*)pack.data() <<endl;
-		cout<<"cz: " <<CameraZoomIn <<endl;
-		cout<<"size: " <<pack.size() <<endl;
 		
 		pack.seek(0);
 		length = pack.size() - sizeof(PacketLength);
 		pack<<length;
+		
 		pack.seek(0);
-		
-		for(auto i=pack.begin(); i<pack.end(); i++) {
-			cout<<(int)*((unsigned char*)i) <<" ";
-		}cout<<endl;
-		
 		conn->write(pack);
 	}
 	
@@ -335,6 +326,7 @@ void CVOperator::camera_zout() {
 		length = pack.size() - sizeof(PacketLength);
 		pack<<length;
 		
+		pack.seek(0);
 		conn->write(pack);
 	}
 	
@@ -368,6 +360,7 @@ void CVOperator::smallMsg(int in) {
 		pack.seek(0);
 		pack<<length;
 		
+		pack.seek(0);
 		conn->write(pack);
 	}
 }
