@@ -17,7 +17,7 @@ linux-g++ {
 	QMAKE_CXX = g++-4.5
 	LIBS += `pkg-config --libs opencv`
 }
-QMAKE_CXXFLAGS = -std=c++0x
+QMAKE_CXXFLAGS = -std=c++0x -O3
 INCLUDEPATH += ../../ooSockets/src \
     ../common
 LIBS += -L/opt/local/lib/gcc45 \
@@ -25,7 +25,8 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_regex \
     -lpthread \
     -lboost_filesystem \
-    -lboost_system
+    -lboost_system \
+	-lboost_thread
 
 DEFINES += OO_ALL
 

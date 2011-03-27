@@ -275,10 +275,27 @@ public:
 	 *	function is otherwise the same as calling write().
 	 *	@see OByteArray::write()
 	*/
-	template<class T> OByteArray& operator<<(T&& item) {
-		write(item);
-		return *this;
-	}
+	OByteArray& operator<<(OByteArray& ba);
+	OByteArray& operator<<(OByteArray&& ba);
+	OByteArray& operator<<(const OString& str);
+	OByteArray& operator<<(const OString&& str);
+	OByteArray& operator<<(string str);
+	OByteArray& operator<<(const char* str);
+	OByteArray& operator<<(OSerializable& obj);
+	OByteArray& operator<<(bool i);
+	OByteArray& operator<<(int8_t i);
+	OByteArray& operator<<(int16_t i);
+	OByteArray& operator<<(int32_t i);
+	OByteArray& operator<<(int64_t i);
+	OByteArray& operator<<(uint8_t i);
+	OByteArray& operator<<(uint16_t i);
+	OByteArray& operator<<(uint32_t i);
+	OByteArray& operator<<(uint64_t i);
+	
+//	template<class T> OByteArray& operator<<(T&& item) {
+//		write(item);
+//		return *this;
+//	}
 	
 	/// This function is overloaded.
 	template <class T> OByteArray& operator<<(const vector<T>& vec) {
@@ -611,6 +628,8 @@ public:
 	 *	stream pointer.
 	*/
 	char* tellData();
+	
+	const char* constTellData() const;
 	
 	/**	Get the amount of data after the current position of the
 	 *	stream pointer.

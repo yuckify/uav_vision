@@ -4,6 +4,10 @@ OUdpSocket::OUdpSocket(OThread* parent) : OSocket(parent) {
 	
 }
 
+OUdpSocket::OUdpSocket(QObject *parent) : OSocket(parent) {
+	
+}
+
 bool OUdpSocket::bind(int port, OString addr, OO::SockFamily family) {
 	if(!OSocket::listen(port, "", OO::Udp, family))
 		return false;

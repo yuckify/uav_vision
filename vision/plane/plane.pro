@@ -28,7 +28,7 @@ linux-g++ {
 	QMAKE_CXX = g++-4.5
 	LIBS += -lboost_thread-mt
 }
-QMAKE_CXXFLAGS = -std=c++0x
+QMAKE_CXXFLAGS = -std=c++0x -O3
 INCLUDEPATH += ../../ooSockets/src \
     ../common
 LIBS += -L/opt/local/lib/gcc45 \

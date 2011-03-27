@@ -64,8 +64,9 @@ enum CameraState {
 */
 enum Packet {
 	//streaming packets
-	VideoFrameHeader = 1,
-	VideoFrameSegment,
+	VideoFrame,
+//	VideoFrameHeader,
+//	VideoFrameSegment,
 	Telemetry,
 	
 	//high resolutions image details
@@ -83,6 +84,12 @@ enum Packet {
 	CameraDownload,
 	CameraStatus,
 	
+};
+
+enum PacketPriority {
+	PriorityLow,
+	PriorityMed,
+	PriorityHigh
 };
 
 struct PlaneInfo : public OSerializable {

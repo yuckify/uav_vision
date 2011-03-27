@@ -2,7 +2,7 @@
 
 bool OSocket::initSockLimit = false;
 
-OSocket::OSocket(OThread *parent) : qt_write(NULL) {
+OSocket::OSocket(OThread *parent) : qt_write(NULL), qt_read(NULL) {
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -27,7 +27,7 @@ OSocket::OSocket(OThread *parent) : qt_write(NULL) {
 }
 
 #ifdef OO_QT
-OSocket::OSocket(QObject *parent) : qt_write(NULL) {
+OSocket::OSocket(QObject *parent) : qt_write(NULL), qt_read(NULL) {
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -351,7 +351,7 @@ OAddressList OSocket::getAddressInfo(OString addr,
 	addrinfo* servinfo = 0;
 	addrinfo * p;
 	
-	unique_ptr<addrinfo> tmp;
+	unique_ptr<addrinfo> tmp(NULL);
 	if(!hints.isEmpty()) {
 		tmp.reset(new addrinfo);
 		::memset(tmp.get(), 0, sizeof(addrinfo));
@@ -461,6 +461,8 @@ void OSocket::setFileDescriptor(OO::HANDLE des) {
 	unregisterFD();
 	
 	fdes = (OO::SOCKET)des;
+	
+	if(des > 0) conn = true;
 	
 	//register the new file descriptor with the parent thread
 	registerFD();
@@ -612,7 +614,6 @@ void OSocket::readyWriteFunc(function<void ()> cbk) {
 }
 
 void OSocket::readyReadFunc(function<void ()> cbk) {
-	cout<<"reg cbk" <<endl;
 	readyReadCbk = cbk;
 }
 
@@ -757,6 +758,28 @@ void OSocket::setSendBufferSize(int size) {
 #else
 	::setsockopt(fdes, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
 #endif
+}
+
+int OSocket::recvBufferSize() {
+	int val = 0;
+	socklen_t size = sizeof(val);
+#ifdef __windows__
+	
+#else
+	::getsockopt(fdes, SOL_SOCKET, SO_RCVBUF, &val, &size);
+#endif
+	return val;
+}
+
+int OSocket::sendBufferSize() {
+	int val = 0;
+	socklen_t size = sizeof(val);
+#ifdef __windows__
+	
+#else
+	::getsockopt(fdes, SOL_SOCKET, SO_SNDBUF, &val, &size);
+#endif
+	return val;
 }
 
 void OSocket::setBroadcast(bool b) {

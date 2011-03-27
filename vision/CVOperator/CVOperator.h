@@ -39,6 +39,7 @@
 #include<OUdpSocket.hpp>
 #include<OSockAddress.hpp>
 #include<OCompatibility.hpp>
+#include<ODataStream.hpp>
 
 #include<Defs.h>
 #include<ImageDatabase.h>
@@ -85,10 +86,10 @@ protected:
 	void showImageDb(ImageDatabase& db);
 	
 	//networking
+	ODataStream<uint32_t, uint8_t, OO::LittleEndian, true> gc;
 	OTcpSocket* conn;
 	QSocketNotifier* connNotifier;
 	OUdpSocket* multlisten;
-	QSocketNotifier* multNotifier;
 	QSocketNotifier* multErrorNotifier;
 	void multError(OSockError e);
 	void connReadyRead();

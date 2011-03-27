@@ -16,6 +16,8 @@ namespace bst = boost;
 
 #include<OPipe.hpp>
 #include<OByteArray.hpp>
+#include<ODataStream.hpp>
+#include<OCompatibility.hpp>
 
 #include<Defs.h>
 
@@ -23,13 +25,15 @@ using namespace std;
 
 class VideoThread : public OThread {
 public:
-	VideoThread(bst::mutex& mut, deque<OByteArray>& pkts, OPipe& p, PlaneInfo& inf);
+	VideoThread(ODataStreamBase* strm, bst::mutex& mut, 
+				deque<OByteArray>& pkts, OPipe& p, PlaneInfo& inf);
 	
 	void run();
 	
 	void setCompression(OString comp);
 	
 private:
+	ODataStreamBase* stream;
 	OPipe* pipe;
 	bst::mutex& videolock;
 	deque<OByteArray>& videopacks;

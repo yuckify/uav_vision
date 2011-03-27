@@ -113,6 +113,8 @@ public:
 	 *	@param data The data to be written.
 	*/
 	int write(OByteArray &data);
+	
+	int write(OByteArray &data, int len);
 };
 
 #endif // OTcpSocket_H

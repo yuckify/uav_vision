@@ -32,6 +32,7 @@ int OTcpSocket::read(OByteArray& data, int len) {
 	int recvlen = recv(fdes, data.tellData(), len, 0);
 	if(recvlen != -1) {
 		data.advanceSize(recvlen);
+		data.seek(recvlen, OO::cur);
 	} else {
 		//an error occured so report it
 		sigError();
@@ -70,9 +71,14 @@ OByteArray OTcpSocket::readAll() {
 }
 
 int OTcpSocket::write(OByteArray &data) {
+	return write(data, data.dataLeft());
+}
+
+int OTcpSocket::write(OByteArray &data, int len) {
 	int ret = -1;
 	
-	if((ret = send(fdes, data.tellData(), data.dataLeft(), 0)) == -1) {
+	ret = send(fdes, data.tellData(), len, 0);
+	if(ret == -1) {
 		unregisterFD();
 		sigDisconnect();
 		sigError();

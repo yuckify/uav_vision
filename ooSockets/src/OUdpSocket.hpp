@@ -29,6 +29,10 @@
 #include<OSockAddress.hpp>
 #include<OO.hpp>
 
+#ifdef OO_QT
+#include<QObject>
+#endif
+
 #ifndef __windows__
 	#include<netinet/in.h>
 #endif
@@ -60,12 +64,19 @@
  *	\endcode
 */
 class OUdpSocket : public OSocket {
+#ifdef OO_QT
+	Q_OBJECT
+#endif
 public:
 	/**	A GUdpServer instance must be parented to a OThread instance to 
 	 *	utilize the callbacks set with calls to readyReadFunc(), errorFunc()
 	 *	or disconnectFunc().
 	*/
 	OUdpSocket(OThread* parent = 0);
+	
+#ifdef OO_QT
+	OUdpSocket(QObject* parent);
+#endif
 	
 	/**	Listen for udp packets.
 	 *	@param port The port to listen for packets on.

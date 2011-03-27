@@ -53,7 +53,10 @@ MainThread::MainThread() :
 	serv->incommingFunc(bind(&MainThread::incommingConnection, this, _1));
 	serv->listen(25001);
 	
-	
+	//
+	//
+	//
+	gc.setSendHandler(VideoFrame, PriorityHigh);
 	
 	//initialize the ground socket pointer
 	ground = 0;
@@ -63,7 +66,7 @@ MainThread::MainThread() :
 	video->readFunc(bind(&MainThread::videoRead, this));
 	
 	//initialize the video thread to handle grabbing the video frames
-	vthread = new VideoThread(videolock, videopacks, *video, info);
+	vthread = new VideoThread(&gc, videolock, videopacks, *video, info);
 	vthread->start();
 	
 	//setup the timeout function so the multicast socket
@@ -79,6 +82,7 @@ MainThread::MainThread() :
 	//**************************************************
 	//
 	//**************************************************
+	gc.setDisconnectSig(bind(&MainThread::groundDisconnected, this));
 	
 	gc.setRecvHandler(ImageDetails, [](OByteArray data)->void{
 		cout<<"ImageDetails" <<endl;
@@ -128,7 +132,7 @@ void MainThread::multError(OSockError e) {
 }
 
 void MainThread::incommingConnection(OO::HANDLE fd) {
-	if(!ground) {
+	if(!gc.connected()) {
 		cout<<"New Ground Socket" <<endl;
 		multTimer.stop();
 		gc.setFileDescriptor(fd);
@@ -200,18 +204,18 @@ void MainThread::videoRead() {
 }
 
 void MainThread::groundDisconnected() {
-	if(ground) {
+//	if(gc.connected()) {
 		cout<<"Ground Disconnected" <<endl;
 		
-		delete ground;
-		ground = NULL;
+//		delete ground;
+//		ground = NULL;
 		
 		videopacks.clear();
 		
 		multTimer.parent(this);
 		multTimer.callback(bind(&MainThread::multTimeout, this));
 		multTimer.start(100, OO::Repeat);
-	}
+//	}
 }
 
 void MainThread::groundReadyRead() {

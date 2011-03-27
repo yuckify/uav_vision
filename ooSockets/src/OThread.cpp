@@ -1,11 +1,11 @@
 #include"OThread.hpp"
 
-OThread::OThread() {
+OThread::OThread() : tout(NULL) {
 	is_running = false;
 	clear();
 }
 
-OThread::OThread(function<void ()> cbk) {
+OThread::OThread(function<void ()> cbk) : tout(NULL) {
 	is_running = false;
 	clear();
 	
@@ -163,7 +163,6 @@ bool OThread::execOnce() {
 			readMap[i].obj->readLoop();
 		}
 	}
-	
 	//handle the fds ready to be written to
 	length = writeMap.size();
 	for(unsigned i=0; i<length; i++) {

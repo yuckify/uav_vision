@@ -227,11 +227,16 @@ public:
 	
 	/// Set the amount of received data the network stack is to
 	/// buffer.
-	void setRecvBufferSize(int size = 36000);
+	void setRecvBufferSize(int size = 1000000);
 	
 	/// Set the amount of sent data the network stack is to
 	/// buffer.
-	void setSendBufferSize(int size = 36000);
+	void setSendBufferSize(int size = 1000000);
+	
+	
+	int recvBufferSize();
+	
+	int sendBufferSize();
 	
 	void setBroadcast(bool b);
 	bool broadcast();
@@ -377,7 +382,7 @@ protected:
 	/// This get called when it comes time to unregister the file
 	/// descriptors with the parent, when shutting down.
 	void unregisterFD() {
-		if(par) {
+		if(par && fdes) {
 			par->unregisterReadFD((OO::HANDLE)fdes);
 			par->unregisterWriteFD((OO::HANDLE)fdes);
 			par->unregisterPriorityFD((OO::HANDLE)fdes);
@@ -422,7 +427,8 @@ protected:
 	///	Callback, called when data is available in the buffer.
 	function<void ()> readyReadCbk;
 	void sigReadyRead() {
-		if(readyReadCbk) readyReadCbk();
+		if(readyReadCbk)
+			readyReadCbk();
 	}
 	
 	/// Callback, called when an incomming connection is pending

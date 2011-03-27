@@ -2,7 +2,8 @@
 #include "ui_CVOperator.h"
 
 CVOperator::CVOperator(QWidget *parent) : 
-	QMainWindow(parent), ui(new Ui::CVOperator) {
+	QMainWindow(parent), ui(new Ui::CVOperator),
+	gc(this) {
 	ui->setupUi(this);
 	skip = -1;
 	
@@ -12,8 +13,8 @@ CVOperator::CVOperator(QWidget *parent) :
 	
 	//setup the packet switcher
 	for(int i=0; i<100; i++) switcher.push_back(NULL);
-	switcher[VideoFrameHeader] = bind(&CVOperator::VideoFrameHeaderSwitch, this, _1);
-	switcher[VideoFrameSegment] = bind(&CVOperator::VideoFrameSegmentSwitch, this, _1);
+//	switcher[VideoFrameHeader] = bind(&CVOperator::VideoFrameHeaderSwitch, this, _1);
+//	switcher[VideoFrameSegment] = bind(&CVOperator::VideoFrameSegmentSwitch, this, _1);
 	switcher[ImageDetails] = bind(&CVOperator::ImageDetailsSwitch, this, _1);
 	switcher[ErrorMsg] = bind(&CVOperator::ErrorMsgSwitch, this, _1);
 	switcher[CameraStatus] = bind(&CVOperator::CameraStatusSwitch, this, _1);
@@ -176,19 +177,34 @@ CVOperator::CVOperator(QWidget *parent) :
 	//setup networking
 	connNotifier = NULL;
 	conn = NULL;
-	multlisten = new OUdpSocket();
+	multlisten = new OUdpSocket(this);
 	multlisten->errorFunc(bind(&CVOperator::multError, this, _1));
+	multlisten->readyReadFunc(bind(&CVOperator::multActivated, this, 0));
 	if(!multlisten->listenMulticast(25000, "225.0.0.37")) {
 		log<<error <<"Error initializing socket: " <<multlisten->error()
 				<<" " <<multlisten->strerror() <<endl;
 	}
-	multNotifier = new QSocketNotifier(multlisten->fileDescriptor(), 
-									   QSocketNotifier::Read, this);
-	connect(multNotifier, SIGNAL(activated(int)), this, SLOT(multActivated(int)));
 	
 	//load the settings for the window
 	this->loadSettings();
 	
+	//setup the callbacks for the ground connection
+	gc.setRecvHandler(VideoFrame, [&disp](OByteArray ba)->void{
+		CvMat* compFrame = NULL;
+		
+		ba>>compFrame;
+		
+		IplImage* img = cvDecodeImage(compFrame);
+		
+		if(img == NULL) return;
+		
+		//display the image
+		disp->setPixmap(QPixmap::fromImage(IplImageToQImage(img), 0));
+		
+		//release memory we won't be using anymore
+		cvReleaseMat(&compFrame);
+		cvReleaseImage(&img);
+	});
 	
 }
 
@@ -567,8 +583,6 @@ void CVOperator::CameraStatusSwitch(OByteArray& pack) {
 }
 
 void CVOperator::multActivated(int) {
-	multNotifier->setEnabled(false);
-	
 	log<<"Got Multicast Packet" <<endl;
 	
 	OByteArray data = multlisten->readAll(addr);
@@ -580,10 +594,15 @@ void CVOperator::multActivated(int) {
 	}
 	*/
 	
-	if(!conn) {
+//	if(!conn) {
+	if(!gc.connected()) {
 		log<<"New Connection to Plane" <<endl;
 		setCVOperatorStatus(true);
 		
+		addr.port(25001);
+		gc.connect(addr);
+		
+		/*
 		conn = new OTcpSocket();
 		addr.port(25001);
 		conn->connect(addr);
@@ -593,8 +612,8 @@ void CVOperator::multActivated(int) {
 		connNotifier = new QSocketNotifier(conn->fileDescriptor(),
 										   QSocketNotifier::Read, this);
 		connect(connNotifier, SIGNAL(activated(int)), this, SLOT(connActivated(int)));
+		*/
 	}
-	multNotifier->setEnabled(true);
 }
 
 void CVOperator::connActivated(int) {

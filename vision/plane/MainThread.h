@@ -82,7 +82,7 @@ private:
 	void groundError();
 	void handlePacket(OByteArray& pack);
 	
-	ODataStream<false, uint16_t, uint8_t> gc;
+	ODataStream<uint32_t, uint8_t, OO::LittleEndian, true> gc;
 	
 	
 	//this structure and these functions are for packet switching

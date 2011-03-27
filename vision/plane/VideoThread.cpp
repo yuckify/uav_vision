@@ -1,10 +1,13 @@
 #include"VideoThread.h"
 
-VideoThread::VideoThread(bst::mutex &mut, deque<OByteArray> &pkts, OPipe &p, PlaneInfo& inf) :
+VideoThread::VideoThread(ODataStreamBase* strm, bst::mutex &mut, 
+						 deque<OByteArray> &pkts, OPipe &p, PlaneInfo& inf) :
 		videolock(mut), videopacks(pkts), info(inf) {
 	//setup the pipe so we can a signal to the main thread that
 	//the video data is available
 	pipe = new OPipe(p);
+	
+	stream = strm;
 	
 	//setup the callback that will be executed when this thread is started
 //	this->connect(bind(&VideoThread::run, this));
@@ -65,6 +68,19 @@ void VideoThread::run() {
 		}
 		comptex.unlock();
 		
+		if(stream->connected()) {
+			static int counter = 0;
+			counter++;
+			if(counter >= 10) {
+				OByteArray data;
+				data<<temp;
+				stream->write(VideoFrame, data);
+				counter = 0;
+			}
+		}
+		cvReleaseMat(&temp);
+		
+		/*
 		uint16_t count=0; //image piece counter
 		int headersize=sizeof(int)*4; //header size
 		uint16_t maxlength=1024-headersize; //1024 - the 10 block header
@@ -113,7 +129,7 @@ void VideoThread::run() {
 		OByteArray tmp;
 		tmp<<(uint8_t)50;
 		pipe->write(tmp);
-		
+		*/
 	}//end while(1)
 }
 
