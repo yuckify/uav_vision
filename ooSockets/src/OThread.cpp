@@ -207,8 +207,6 @@ void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
-	fdMap xfer(fd, o);
-	
 	//check to make sure the file descriptor is not already added
 	for(unsigned i=0; i<writeMap.size(); i++) {
 		//the file descriptor matches, so just reset the object
@@ -219,7 +217,7 @@ void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
 		}
 	}
 	
-	writeMap.push_back(xfer);
+	writeMap.push_back(fdMap(fd, o));
 	
 #ifdef __windows__
 

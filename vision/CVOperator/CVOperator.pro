@@ -28,7 +28,7 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_system \
 	-lboost_thread
 
-DEFINES += OO_ALL
+DEFINES += OO_OPENCV OO_QT
 
 SOURCES += main.cpp \
     CVOperator.cpp \

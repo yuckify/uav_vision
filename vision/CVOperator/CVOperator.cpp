@@ -188,6 +188,13 @@ CVOperator::CVOperator(QWidget *parent) :
 	//load the settings for the window
 	this->loadSettings();
 	
+	gc.setSendHandler(CameraZoomIn, 0);
+	gc.setSendHandler(CameraZoomOut, 0);
+	gc.setSendHandler(CameraPower, 0);
+	gc.setSendHandler(CameraCapture, 0);
+	gc.setSendHandler(CameraDownload, 0);
+	
+	
 	//setup the callbacks for the ground connection
 	gc.setRecvHandler(VideoFrame, [&disp](OByteArray ba)->void{
 		CvMat* compFrame = NULL;
@@ -310,19 +317,12 @@ void CVOperator::calcData() {
 }
 
 void CVOperator::camera_zin() {
-	if(conn) {
+	if(gc.connected()) {
 		OByteArray pack;
-		PacketType type = CameraZoomIn;
-		PacketLength length = 0;
 		int zoomlen = 1;
-		pack<<length <<type <<zoomlen;
+		pack<<zoomlen;
 		
-		pack.seek(0);
-		length = pack.size() - sizeof(PacketLength);
-		pack<<length;
-		
-		pack.seek(0);
-		conn->write(pack);
+		gc.write(CameraZoomIn, pack);
 	}
 	
 	zoomslider->setSliderPosition(zoomslider->sliderPosition()+1);
@@ -330,20 +330,12 @@ void CVOperator::camera_zin() {
 }
 
 void CVOperator::camera_zout() {
-	if(conn) {
+	if(gc.connected()) {
 		OByteArray pack;
-		PacketType type = CameraZoomOut;
-		PacketLength length = 0;
 		int zoomlen = 1;
+		pack<<zoomlen;
 		
-		pack<<length <<type <<zoomlen;
-		
-		pack.seek(0);
-		length = pack.size() - sizeof(PacketLength);
-		pack<<length;
-		
-		pack.seek(0);
-		conn->write(pack);
+		gc.write(CameraZoomOut, pack);
 	}
 	
 	if(zoomslider->sliderPosition() > 0)
@@ -365,19 +357,9 @@ void CVOperator::camera_download() {
 }
 
 void CVOperator::smallMsg(int in) {
-	if(conn) {
-		PacketType type = in;
-		PacketLength length = 0;
-		
-		OByteArray pack;
-		pack<<length <<type;
-		
-		length = pack.size() - sizeof(PacketLength);
-		pack.seek(0);
-		pack<<length;
-		
-		pack.seek(0);
-		conn->write(pack);
+	if(gc.connected()) {
+		OByteArray data;
+		gc.write(in, data);
 	}
 }
 

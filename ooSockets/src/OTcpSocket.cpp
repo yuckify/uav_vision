@@ -5,7 +5,7 @@ OTcpSocket::OTcpSocket(OThread *parent) : OSocket(parent) {
 }
 
 OTcpSocket::OTcpSocket(QObject *parent) : OSocket(parent) {
-	
+	cout<<"qt sock" <<endl;
 }
 
 bool OTcpSocket::connect(OString addr, 
@@ -76,6 +76,7 @@ int OTcpSocket::write(OByteArray &data) {
 
 int OTcpSocket::write(OByteArray &data, int len) {
 	int ret = -1;
+	if(!(data.size() && (len > 0))) return 0;
 	
 	ret = send(fdes, data.constTellData(), len, 0);
 	if(ret == -1) {

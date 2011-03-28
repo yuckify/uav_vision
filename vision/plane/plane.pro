@@ -17,12 +17,9 @@ unix {
 }
 
 macx {
-	PKGCONFIG += /usr/local/lib/pkgconfig/opencv.pc
-}
-
-macx {
 	QMAKE_CXX = /opt/local/bin/gcc-mp-4.5
 	INCLUDEPATH += /usr/local/include
+	PKGCONFIG += /usr/local/lib/pkgconfig/opencv.pc
 }
 linux-g++ {
 	QMAKE_CXX = g++-4.5
@@ -39,32 +36,8 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_system \
 	`pkg-config --libs opencv`
 
-DEFINES += OO_ALL
+DEFINES += OO_OPENCV OO_ALL
 
-#macx { 
-#    QMAKE_CXX = /opt/local/bin/gcc-mp-4.5
-#    LIBS += -L/opt/local/lib/gcc45
-#    INCLUDEPATH = /opt/local/include/gcc45/c++ \
-#        /usr/include
-#}
-#linux-g++:QMAKE_CXX = gcc-4.5
-#QMAKE_CXXFLAGS = -std=c++0x \
-#    -pthread
-#INCLUDEPATH += ../../ooSockets/src \
-#    ../common
-#LIBS += -lboost_regex \
-#    -lpthread \
-#    -lboost_filesystem \
-#    -lboost_system \
-#    -lboost_thread \
-#    -L/usr/local/lib \
-#	-lml \
-#	-lcvaux \
-#	-lhighgui \
-#	-lcv \
-#	-lcxcore \
-#	-L/opt/local/lib \
-#	-lx264
 SOURCES += main.cpp \
     MainThread.cpp \
     VideoThread.cpp \

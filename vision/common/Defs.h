@@ -65,8 +65,6 @@ enum CameraState {
 enum Packet {
 	//streaming packets
 	VideoFrame,
-//	VideoFrameHeader,
-//	VideoFrameSegment,
 	Telemetry,
 	
 	//high resolutions image details

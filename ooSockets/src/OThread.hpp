@@ -150,18 +150,10 @@ protected:
 	///	their associated file descriptors.
 	struct fdMap {
 		fdMap() { fd = 0; obj = 0; }
-#ifdef __windows__
-		fdMap(HANDLE f, OIODevice* o) { fd = f; obj = o; }
-#else
-		fdMap(int f, OIODevice* o) { fd = f; obj = o; }
-#endif
+		fdMap(OO::HANDLE f, OIODevice* o) { fd = f; obj = o; }
 		~fdMap() { obj = 0; }
 		
-#ifdef __windows__
-		HANDLE fd;
-#else
-		int fd;
-#endif
+		OO::HANDLE fd;
 		OIODevice* obj;
 	};
 	

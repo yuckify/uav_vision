@@ -110,7 +110,7 @@ public:
 	int sec() const;
 	
 	/// Return the OTime in milliseconds.
-	int msec() const;
+	int64_t msec() const;
 	
 	/// Return the OTime in microseconds.
 	int64_t usec() const;

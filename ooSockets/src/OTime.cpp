@@ -67,7 +67,7 @@ int OTime::sec() const {
 	return us/(int64_t)1000000;
 }
 
-int OTime::msec() const {
+int64_t OTime::msec() const {
 	return usec()/(int64_t)1000;
 }
 

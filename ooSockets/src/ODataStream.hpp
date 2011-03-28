@@ -151,7 +151,7 @@ protected:
 		PacketType							q_type;
 		PacketLength						q_length;
 		uint8_t								q_config;
-		OByteArray							q_data;
+//		OByteArray							q_data;
 		bool								q_readhead;
 		OByteArray							q_head;
 		
@@ -162,6 +162,9 @@ protected:
 		function<void ()>					writeFuns[4];
 		
 		boost::mutex						q_writetex;
+		
+		//receiver buffers, index value is the packetId
+		vector<OByteArray>					q_recvBuff;
 		
 		pthread_t							q_creator;
 		OPipe								q_activity;
@@ -182,11 +185,14 @@ protected:
 		vector<function<void (OByteArray)>> q_controlHandlers;
 		
 		//the encryption key for sending secure information
+#ifdef OO_BOTAN
 		Botan::RSA_PublicKey* key;
+#endif
 	};
 
 public:
 	explicit ODataStream(OThread* parent) {
+		cout<<"oos ds" <<endl;
 		//create the memory
 		q_mem.reset(new ODataStreamMem(parent));
 		
@@ -230,9 +236,11 @@ public:
 		q_mem->q_creator = pthread_self();
 		q_mem->q_activity.parent(parent);
 		
+		q_mem->q_packetsize = 5000;
+		
 		//make sure the memory buffers know what endian we are using
 		q_mem->q_head.setEndian(useEndian);
-		q_mem->q_data.setEndian(useEndian);
+//		q_mem->q_data.setEndian(useEndian);
 	}
 	
 #ifdef OO_QT
@@ -279,9 +287,11 @@ public:
 											pipeRead, this));
 		q_mem->q_creator = pthread_self();
 		
+		q_mem->q_packetsize = 5000;
+		
 		//make sure the memory buffers know what endian we are using
 		q_mem->q_head.setEndian(useEndian);
-		q_mem->q_data.setEndian(useEndian);
+//		q_mem->q_data.setEndian(useEndian);
 	}
 #endif
 	
@@ -406,16 +416,19 @@ public:
 	 *	@param data The data that is being transmitted.
 	*/
 	void write(uint16_t packetId, OByteArray data) {
-		if(q_mem->q_ique.size() > packetId) {
-			boost::unique_lock<boost::mutex> locker(q_mem->q_writetex);
-			data.seek(0);
-			q_mem->q_ique[packetId].write(packetId, data);
-			q_mem->q_sock.enableReadyWrite();
-			if(!pthread_equal(pthread_self(), q_mem->q_creator)) {
-				OByteArray data("d", 1);
-				q_mem->q_activity.write(data);
-			}
-		}
+		boost::unique_lock<boost::mutex> locker(q_mem->q_writetex);
+		data.seek(0);
+		
+		if(q_mem->q_ique.size() <= packetId) return;
+		
+		q_mem->q_ique[packetId].write(packetId, data);
+		q_mem->q_sock.enableReadyWrite();
+		
+		//if the thread writing the data is not the one that created
+		//this ODataStream then pipe some data over to the one that did make
+		//this ODatastream
+		OByteArray d("d", 1);
+		q_mem->q_activity.write(d);
 	}
 	
 	/**	Returns true if all the members in this instance have been
@@ -480,11 +493,6 @@ protected:
 				//for more data
 				if(q_mem->q_readhead) return;
 				
-//				cout<<"head: " <<q_mem->q_head.size() <<endl;
-//				for(auto i=q_mem->q_head.begin(); i<q_mem->q_head.end(); i++) {
-//					cout<<(int)*((unsigned char*)i) <<" ";
-//				}cout<<endl;
-				
 				//deserialize the header information
 				q_mem->q_head.seek(0);
 				q_mem->q_head>>(q_mem->q_length);
@@ -501,75 +509,42 @@ protected:
 				q_mem->q_head.clear();
 			}
 			
+			//make sure we have a buffer allocated for the packet
+			while(q_mem->q_type >= q_mem->q_recvBuff.size()) {
+				q_mem->q_recvBuff.push_back(OByteArray());
+				q_mem->q_recvBuff.back().setEndian(useEndian);
+			}
+			
+			//get the curret buffer we are working with
+			OByteArray& data = q_mem->q_recvBuff[q_mem->q_type];
+			
 			//read in some data, make sure the new data gets appended
 			//to the block of old data
-//			cout<<"avail: " <<q_mem->q_sock.available() <<endl;
-			q_mem->q_sock.read(q_mem->q_data, q_mem->q_length - q_mem->q_data.size() - 
+			q_mem->q_sock.read(data, q_mem->q_length - data.size() - 
 							   sizeof(PacketType) -
 							   sizeof(uint8_t));
-//			cout <<"availafter: " <<q_mem->q_sock.available() <<endl;
 			
-			
-			cout<<"data size: " <<q_mem->q_data.size() <<" length: " <<q_mem->q_length 
-					-sizeof(PacketType)-sizeof(uint8_t) <<endl;
-			
-//			cout<<"data begin pack" <<endl;
-//			for(auto i=q_mem->q_data.begin(); i<q_mem->q_data.begin()+16; i++) {
-//				cout<<(int)*((unsigned char*)i) <<" ";
-//			}cout<<endl;
-			
-//			cout<<"data end pack" <<endl;
-//			for(auto i=q_mem->q_data.end()-16; i<q_mem->q_data.end(); i++) {
-//				cout<<(int)*((unsigned char*)i) <<" ";
-//			}cout<<endl;
-			
-			/*
-			if(q_mem->q_data.size() > 250000 || q_mem->q_length > 250000) {
-				uint64_t f = 0x0000000100040001;
-				cout<<"pos: " <<q_mem->q_data.find((char*)&f, 8) <<endl;
-				sleep(2);
-				::exit(0);
-			}
-			*/
-			
-			if(q_mem->q_data.size() >= (q_mem->q_length-sizeof(PacketType)-sizeof(uint8_t))) {
-//				cout<<"read full packet" <<endl;
+			if(data.size() >= (q_mem->q_length-sizeof(PacketType)-sizeof(uint8_t))) {
 				//read out the packet type
-				q_mem->q_data.seek(0);
-//				q_mem->q_data>>(q_mem->q_type);
-				
-//				cout<<"begin pack" <<endl;
-//				for(auto i=q_mem->q_data.begin(); i<q_mem->q_data.begin()+16; i++) {
-//					cout<<(int)*((unsigned char*)i) <<" ";
-//				}cout<<endl;
-				
-//				cout<<"end pack" <<endl;
-//				for(auto i=q_mem->q_data.end()-16; i<q_mem->q_data.end(); i++) {
-//					cout<<(int)*((unsigned char*)i) <<" ";
-//				}cout<<endl;
-				
+				data.seek(0);
 				
 				if(!(q_mem->q_config & EndPacket)) {
-//					cout<<"not end" <<endl;
 					return;
 				}
 				
 				//if a function is set for this packet signature, call it
 				if(q_mem->q_handlers.size() > q_mem->q_type) {
 					if(q_mem->q_handlers[q_mem->q_type]) {
-						q_mem->q_handlers[q_mem->q_type](q_mem->q_data);
+						q_mem->q_handlers[q_mem->q_type](data);
 					}
 				}
 				
-//				cout<<"done reading" <<endl;
 				//we are done with this data
-				q_mem->q_data.clear();
+				data.clear();
 				q_mem->q_readhead = true;
 			}
 			
-//			exit(0);
-			
-		} while(q_mem->q_data.size() == q_mem->q_length);
+		} while(q_mem->q_recvBuff[q_mem->q_type].size() == q_mem->q_length);
 	}
 	
 	void writeInit() {
@@ -604,12 +579,7 @@ protected:
 				assert(head_written == head.size());
 				
 				//write the payload
-				data.seek(0);
 				q_mem->q_sock.write(data);
-				
-				cout<<"length: " <<length <<" head: " <<head.size() <<" data: " <<data.size()
-						<<" left: " <<data.dataLeft() <<"sbsize: " 
-						<<q_mem->q_sock.sendBufferSize() <<endl;
 				
 				//check if we wrote all of the payload or just most of it
 				if(!data.dataLeft()) {
@@ -631,14 +601,14 @@ protected:
 				return;
 			} else {
 				//else change state to write low
-				q_mem->q_writeState = WriteInit;//debugging
-				return;//debugging
-				
 				q_mem->q_writeState = WriteLow;
 				writeLow();
 				return;
 			}
 		}
+		
+		q_mem->q_writeState = WriteLow;
+		writeLow();
 	}
 	
 	void writeLow() {
@@ -648,19 +618,61 @@ protected:
 			if(i->hasData()) {
 				//prepare the header for the packet
 				OByteArray head;
-//				OByteArray& data = i->q_mem->q_que.front().q_data;
+				OByteArray& data = i->q_mem->q_que.front().q_data;
 				
+				//compute how much of the payload will be written
+				uint32_t datalen;
+				if(data.size() > q_mem->q_packetsize)	datalen = q_mem->q_packetsize;
+					else								datalen = data.size();
 				
+				//setup the variables that make up the header for this packet
+				PacketLength length = 0;
+				uint8_t config = 0;
+				if(data.dataLeft() == datalen) config |= EndPacket;
+				PacketType type = i->q_mem->q_que.front().q_type;
+				head<<length <<config <<type;
+				
+				head.seek(0);
+				length = datalen + head.size() - sizeof(PacketLength);
+				head<<length;
+				
+				//assume the whole header will be written...
+				head.seek(0);
+				unsigned head_written = q_mem->q_sock.write(head);
+				
+				//this throws if not all the data in the head gets written
+				assert(head_written == head.size());
+				
+				//write the payload
+				q_mem->q_sock.write(data, datalen);
+				
+				//check if we wrote all of the payload or just most of it
+				if(!data.dataLeft()) {
+					//we wrote all this packet pop it from the queue
+					i->q_mem->q_que.pop_front();
+					
+					//we are done here so reset to init
+					q_mem->q_writeState = WriteInit;
+					return;
+				}
+				
+				//store the remaining packet to be written when more room in
+				//the network stack becomes available
+				q_mem->q_writepacket = i->q_mem->q_que.front();
+				i->q_mem->q_que.pop_front();
+				
+				q_mem->q_writeState = WriteFinish;
 				
 				return;
 			}
 		}
+		q_mem->q_writeState = WriteInit;
 	}
 	
 	void writeFinish() {
 		//write the remaining data
-		cout<<"finish data left: " <<q_mem->q_writepacket.q_data.dataLeft() <<endl;
-		cout<<"write finished: " <<q_mem->q_sock.write(q_mem->q_writepacket.q_data) <<endl;
+//		cout<<"finish data left: " <<q_mem->q_writepacket.q_data.dataLeft() <<endl;
+//		cout<<"write finished: " <<q_mem->q_sock.write(q_mem->q_writepacket.q_data) <<endl;
 		
 		//check if there is any remaining data left to be written
 		if(!q_mem->q_writepacket.q_data.dataLeft()) {

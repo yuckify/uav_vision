@@ -93,9 +93,10 @@ void OSocket::enableReadyWrite() {
 		qt_write.reset(new QSocketNotifier(fdes, QSocketNotifier::Write, qtpar));
 		QObject::connect(qt_write.get(), SIGNAL(activated(int)), this, 
 						 SLOT(readyWriteSlot(int)));
+		writestat = true;
 	}
 #endif
-	if(readyWriteCbk && !writestat && fdes) {
+	if(readyWriteCbk && !writestat && fdes && par) {
 		par->registerWriteFD((OO::HANDLE)fdes, this);
 		writestat = true;
 	}
@@ -103,11 +104,11 @@ void OSocket::enableReadyWrite() {
 
 void OSocket::disableReadyWrite() {
 #ifdef OO_QT
-	if(qt_write.get()) {
+	if(qt_write) {
 		qt_write->setEnabled(false);
 	}
 #endif
-	if(writestat) {
+	if(writestat && par) {
 		par->unregisterWriteFD((OO::HANDLE)fdes);
 		writestat = false;
 	}

@@ -24,6 +24,7 @@
 #ifndef OTcpSocket_H
 #define OTcpSocket_H
 
+#include"OO.hpp"
 #include"OSocket.hpp"
 
 /**	OTcpSocket is a simple wrapper around GSocket that provides a simple interface
