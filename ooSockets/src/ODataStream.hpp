@@ -151,13 +151,12 @@ protected:
 		PacketType							q_type;
 		PacketLength						q_length;
 		uint8_t								q_config;
-//		OByteArray							q_data;
 		bool								q_readhead;
 		OByteArray							q_head;
 		
 		//the packet we need to finish sending
 		Packet								q_writepacket;
-		unsigned							q_current;
+//		unsigned							q_current;
 		WriteState							q_writeState;
 		function<void ()>					writeFuns[4];
 		
@@ -691,6 +690,16 @@ protected:
 	}
 	
 	void sockDisconnected() {
+		//clear all the buffers
+		q_mem->q_readhead = true;
+		q_mem->q_head.clear();
+		for(auto i=q_mem->q_pque.begin(); i<q_mem->q_pque.end(); i++) {
+			i->q_mem->q_que.clear();
+		}
+		for(auto i=q_mem->q_recvBuff.begin(); i<q_mem->q_recvBuff.end(); i++) {
+			i->clear();
+		}
+		
 		if(q_mem->q_disconnect)
 			q_mem->q_disconnect();
 	}

@@ -120,7 +120,7 @@ MainThread::MainThread() :
 }
 
 void MainThread::multTimeout() {
-	if(!ground) {
+	if(!gc.connected()) {
 		OByteArray pack;
 		pack<<123;
 		multping->write(pack);
@@ -136,19 +136,6 @@ void MainThread::incommingConnection(OO::HANDLE fd) {
 		cout<<"New Ground Socket" <<endl;
 		multTimer.stop();
 		gc.setFileDescriptor(fd);
-		
-		/*
-		ground = new OTcpSocket(this);
-		ground->disconnectFunc(bind(&MainThread::groundDisconnected, this));
-		ground->readyReadFunc(bind(&MainThread::groundReadyRead, this));
-		ground->readyWriteFunc(bind(&MainThread::groundReadyWrite, this));
-		ground->errorFunc(bind(&MainThread::groundError, this));
-		ground->setFileDescriptor(fd);
-		
-		if(db.size()) {
-			this->writeImageDb();
-		}
-		*/
 		
 		if(videopacks.size()) ground->enableReadyWrite();
 	}
@@ -204,18 +191,13 @@ void MainThread::videoRead() {
 }
 
 void MainThread::groundDisconnected() {
-//	if(gc.connected()) {
-		cout<<"Ground Disconnected" <<endl;
-		
-//		delete ground;
-//		ground = NULL;
-		
-		videopacks.clear();
-		
-		multTimer.parent(this);
-		multTimer.callback(bind(&MainThread::multTimeout, this));
-		multTimer.start(100, OO::Repeat);
-//	}
+	cout<<"Ground Disconnected" <<endl;
+	
+	videopacks.clear();
+	
+	multTimer.parent(this);
+	multTimer.callback(bind(&MainThread::multTimeout, this));
+	multTimer.start(100, OO::Repeat);
 }
 
 void MainThread::groundReadyRead() {
