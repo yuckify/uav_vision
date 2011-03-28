@@ -694,6 +694,7 @@ void OByteArray::read(OString& str) {
 	seek(len+1, OO::cur);
 }
 
+#ifdef OO_BOTAN
 OByteArray OByteArray::encrypt(Botan::Public_Key* key) {
 	
 }
@@ -701,6 +702,7 @@ OByteArray OByteArray::encrypt(Botan::Public_Key* key) {
 OByteArray OByteArray::decrypt(Botan::Public_Key* key) {
 	
 }
+#endif
 
 bool OByteArray::loadFile(OString fn) {
 	makeOwner();

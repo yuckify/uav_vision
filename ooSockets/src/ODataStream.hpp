@@ -199,7 +199,9 @@ protected:
 		vector<function<void (OByteArray)>> q_controlHandlers;
 		
 		//the encryption key for sending secure information
+#ifdef OO_BOTAN
 		Botan::RSA_PublicKey* key;
+#endif
 	};
 
 public:
