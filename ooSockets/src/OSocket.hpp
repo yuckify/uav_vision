@@ -227,11 +227,11 @@ public:
 	
 	/// Set the amount of received data the network stack is to
 	/// buffer.
-	void setRecvBufferSize(int size = 1000000);
+	void setRecvBufferSize(int size = 200000);
 	
 	/// Set the amount of sent data the network stack is to
 	/// buffer.
-	void setSendBufferSize(int size = 1000000);
+	void setSendBufferSize(int size = 200000);
 	
 	
 	int recvBufferSize();

@@ -71,12 +71,12 @@ void VideoThread::run() {
 		if(stream->connected()) {
 			static int counter = 0;
 			counter++;
-			if(counter >= 10) {
+//			if(counter >= 2) {
 				OByteArray data;
 				data<<temp;
 				stream->write(VideoFrame, data);
 				counter = 0;
-			}
+//			}
 		}
 		cvReleaseMat(&temp);
 		

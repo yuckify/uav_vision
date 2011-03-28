@@ -528,6 +528,7 @@ protected:
 			q_mem->q_sock.read(q_mem->q_data, q_mem->q_length - q_mem->q_data.size() - 
 							   sizeof(PacketType) -
 							   sizeof(uint8_t));
+			cout <<"availafter: " <<q_mem->q_sock.available() <<endl;
 			
 			
 			cout<<"data size: " <<q_mem->q_data.size() <<" length: " <<q_mem->q_length 
@@ -543,7 +544,7 @@ protected:
 //				cout<<(int)*((unsigned char*)i) <<" ";
 //			}cout<<endl;
 			
-			if(q_mem->q_data.size() > 150000 || q_mem->q_length > 150000) {
+			if(q_mem->q_data.size() > 250000 || q_mem->q_length > 250000) {
 				uint64_t f = 0x0000000100040001;
 				cout<<"pos: " <<q_mem->q_data.find((char*)&f, 8) <<endl;
 				sleep(2);
@@ -614,8 +615,6 @@ protected:
 				length = data.size() + head.size() - sizeof(PacketLength);
 				head<<length;
 				
-				cout<<"length: " <<length <<" head: " <<head.size() <<" data: " <<data.size() <<endl;
-				
 				//assume the whole header will be written...
 				head.seek(0);
 				unsigned head_written = q_mem->q_sock.write(head);
@@ -626,6 +625,9 @@ protected:
 				//write the payload
 				data.seek(0);
 				q_mem->q_sock.write(data);
+				
+				cout<<"length: " <<length <<" head: " <<head.size() <<" data: " <<data.size()
+						<<" left: " <<data.dataLeft() <<endl;
 				
 				//check if we wrote all of the payload or just most of it
 				if(!data.dataLeft()) {
@@ -678,7 +680,8 @@ protected:
 	
 	void writeFinish() {
 		//write the remaining data
-		q_mem->q_sock.write(q_mem->q_writepacket.q_data);
+		cout<<"finish tell: " <<q_mem->q_writepacket.q_data.dataLeft() <<endl;
+		cout<<"write finished: " <<q_mem->q_sock.write(q_mem->q_writepacket.q_data) <<endl;
 		
 		//check if there is any remaining data left to be written
 		if(!q_mem->q_writepacket.q_data.dataLeft()) {

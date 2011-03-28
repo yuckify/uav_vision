@@ -77,7 +77,7 @@ int OTcpSocket::write(OByteArray &data) {
 int OTcpSocket::write(OByteArray &data, int len) {
 	int ret = -1;
 	
-	ret = send(fdes, data.tellData(), len, 0);
+	ret = send(fdes, data.constTellData(), len, 0);
 	if(ret == -1) {
 		unregisterFD();
 		sigDisconnect();
