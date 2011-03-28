@@ -38,10 +38,12 @@
 #include<boost/crc.hpp>
 #include<boost/scoped_array.hpp>
 
+#include<OString.hpp>
+
+#ifdef OO_BOTAN
 #include<botan/botan.h>
 #include<botan/rsa.h>
-
-#include<OString.hpp>
+#endif
 
 #ifndef __windows__
 	#include<tr1/functional>
@@ -507,9 +509,11 @@ public:
 		return *this;
 	}
 	
+#ifdef OO_BOTAN
 	OByteArray encrypt(Botan::Public_Key* key);
 	
 	OByteArray decrypt(Botan::Public_Key* key);
+#endif
 	
 	/**	Load the binary data into this data container.
 	 *	@param fn The name of the file to load.

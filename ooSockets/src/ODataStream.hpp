@@ -98,44 +98,27 @@ protected:
 	public:
 		shared_ptr<ODSOutQueueMem>				q_mem;
 		
-		ODSOutQueue() {}
-		
-		ODSOutQueue(void* parent) : q_mem(new ODSOutQueueMem()) {}
-		
-		void init() {
-			if(!isInit()) {
-				q_mem.reset(new ODSOutQueueMem());
-			}
-		}
-		
-		bool isInit() {
-			return q_mem.get();
-		}
+		ODSOutQueue() : q_mem(new ODSOutQueueMem()) {}
 		
 		uint16_t priority() {
-			if(isInit()) return q_mem->q_priority;
+			return q_mem->q_priority;
 			return 0;
 		}
 		
 		void setPriority(uint16_t p) {
-			init();
 			q_mem->q_priority = p;
 		}
 		
 		bool isSecure() {
-			if(isInit()) return q_mem->q_secure;
-			return false;
+			return q_mem->q_secure;
 		}
 		
 		void setSecure(bool secure) {
-			init();
 			q_mem->q_secure = secure;
 		}
 		
-		bool isEmpty() {
-			if(isInit())
-				return !q_mem->q_que.size();
-			return false;
+		bool hasData() {
+			return q_mem->q_que.size();
 		}
 		
 		void write(uint16_t type, OByteArray data) {
@@ -364,11 +347,7 @@ public:
 		while(q_mem->q_pque.size() <= priority)
 			q_mem->q_pque.push_back(ODSOutQueue());
 		
-		if(!q_mem->q_pque[priority].isInit()) {
-			//a queue with this priority does not exist
-			q_mem->q_pque[priority] = ODSOutQueue(q_mem.get());
-			q_mem->q_pque[priority].setPriority(priority);
-		}
+		q_mem->q_pque[priority].setPriority(priority);
 		
 		//set that we want to use this specific queue with this packetId
 		q_mem->q_ique[packetId] = q_mem->q_pque[priority];
@@ -524,11 +503,11 @@ protected:
 			
 			//read in some data, make sure the new data gets appended
 			//to the block of old data
-			cout<<"avail: " <<q_mem->q_sock.available() <<endl;
+//			cout<<"avail: " <<q_mem->q_sock.available() <<endl;
 			q_mem->q_sock.read(q_mem->q_data, q_mem->q_length - q_mem->q_data.size() - 
 							   sizeof(PacketType) -
 							   sizeof(uint8_t));
-			cout <<"availafter: " <<q_mem->q_sock.available() <<endl;
+//			cout <<"availafter: " <<q_mem->q_sock.available() <<endl;
 			
 			
 			cout<<"data size: " <<q_mem->q_data.size() <<" length: " <<q_mem->q_length 
@@ -544,12 +523,14 @@ protected:
 //				cout<<(int)*((unsigned char*)i) <<" ";
 //			}cout<<endl;
 			
+			/*
 			if(q_mem->q_data.size() > 250000 || q_mem->q_length > 250000) {
 				uint64_t f = 0x0000000100040001;
 				cout<<"pos: " <<q_mem->q_data.find((char*)&f, 8) <<endl;
 				sleep(2);
 				::exit(0);
 			}
+			*/
 			
 			if(q_mem->q_data.size() >= (q_mem->q_length-sizeof(PacketType)-sizeof(uint8_t))) {
 //				cout<<"read full packet" <<endl;
@@ -600,7 +581,7 @@ protected:
 		for(auto i=q_mem->q_pque.rbegin(); i<q_mem->q_pque.rend(); i++) {
 			//we have found the first queue, check if it contains any chunks of
 			//data to write
-			if(i->isInit() && !i->isEmpty()) {
+			if(i->hasData()) {
 				//prepare the header for the packet
 				OByteArray head;
 				OByteArray& data = i->q_mem->q_que.front().q_data;
@@ -627,7 +608,8 @@ protected:
 				q_mem->q_sock.write(data);
 				
 				cout<<"length: " <<length <<" head: " <<head.size() <<" data: " <<data.size()
-						<<" left: " <<data.dataLeft() <<endl;
+						<<" left: " <<data.dataLeft() <<"sbsize: " 
+						<<q_mem->q_sock.sendBufferSize() <<endl;
 				
 				//check if we wrote all of the payload or just most of it
 				if(!data.dataLeft()) {
@@ -652,7 +634,6 @@ protected:
 				q_mem->q_writeState = WriteInit;//debugging
 				return;//debugging
 				
-//				q_mem->q_current = i - q_mem->q_pque.rbegin();
 				q_mem->q_writeState = WriteLow;
 				writeLow();
 				return;
@@ -663,10 +644,8 @@ protected:
 	void writeLow() {
 		//start with the first packetwe looked at last after a call to write
 		//the highest priority packet
-		for(auto i=q_mem->q_pque.rbegin(); i<q_mem->q_pque.rend(); i++) {
-//		for(unsigned i=q_mem->q_current; i<q_mem->q_pque.size(); i++) {
-//			if(q_mem->q_pque[i].isInit() && !q_mem->q_pque[i].isEmpty()) {
-			if(!i->isEmpty()) {
+		for(auto i=q_mem->q_pque.rbegin()+1; i<q_mem->q_pque.rend(); i++) {
+			if(i->hasData()) {
 				//prepare the header for the packet
 				OByteArray head;
 //				OByteArray& data = i->q_mem->q_que.front().q_data;
@@ -680,7 +659,7 @@ protected:
 	
 	void writeFinish() {
 		//write the remaining data
-		cout<<"finish tell: " <<q_mem->q_writepacket.q_data.dataLeft() <<endl;
+		cout<<"finish data left: " <<q_mem->q_writepacket.q_data.dataLeft() <<endl;
 		cout<<"write finished: " <<q_mem->q_sock.write(q_mem->q_writepacket.q_data) <<endl;
 		
 		//check if there is any remaining data left to be written

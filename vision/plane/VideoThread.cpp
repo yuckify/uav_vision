@@ -69,13 +69,14 @@ void VideoThread::run() {
 		comptex.unlock();
 		
 		if(stream->connected()) {
-			static int counter = 0;
-			counter++;
+			cout<<"pushed" <<endl;
+//			static int counter = 0;
+//			counter++;
 //			if(counter >= 2) {
 				OByteArray data;
 				data<<temp;
 				stream->write(VideoFrame, data);
-				counter = 0;
+//				counter = 0;
 //			}
 		}
 		cvReleaseMat(&temp);
