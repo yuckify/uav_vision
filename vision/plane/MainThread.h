@@ -1,7 +1,6 @@
 #ifndef MAINTHREAD_H
 #define MAINTHREAD_H
 
-#include<deque>
 #include<sys/types.h>
 #include<memory>
 
@@ -71,8 +70,6 @@ private:
 	
 	//this socket is for receiving data from the video thread
 	VideoThread* vthread;
-	OPipe* video;
-	void videoRead();
 	
 	//this socket is for communicating with the vision ground station
 	OTcpSocket* ground;
@@ -117,11 +114,6 @@ private:
 	OString serialbuf;
 	long long packnum;
 	void autoPilotRead();
-	
-	//these are the queues where the data is push into from
-	//the serial port and the video thread
-	bst::mutex videolock;
-	deque<OByteArray> videopacks;
 	
 	//this is the serial interface to send camera commands to the 
 	//controlling arduino

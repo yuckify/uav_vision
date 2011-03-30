@@ -53,35 +53,11 @@ MainThread::MainThread() :
 	serv->incommingFunc(bind(&MainThread::incommingConnection, this, _1));
 	serv->listen(25001);
 	
+	//**************************************************
 	//
-	//
-	//
+	//**************************************************
 	gc.setSendHandler(VideoFrame, PriorityHigh);
-	
-	//initialize the ground socket pointer
-	ground = 0;
-	
-	//initialize the pipe to get messages from the video thread
-	video = new OPipe(this);
-	video->readFunc(bind(&MainThread::videoRead, this));
-	
-	//initialize the video thread to handle grabbing the video frames
-	vthread = new VideoThread(&gc, videolock, videopacks, *video, info);
-	vthread->start();
-	
-	//setup the timeout function so the multicast socket
-	//emits a packet every one second or so
-	multTimer.callback(bind(&MainThread::multTimeout, this));
-	multTimer.start(100, OO::Repeat);
-	
-	
-	//setup the serial connection to the arduino, so we can send it commands
-	//to control the camera
-	arduino.reset(new OSerial());
-	
-	//**************************************************
-	//
-	//**************************************************
+	gc.setSendHandler(ImageDetails, PriorityMed);
 	gc.setDisconnectSig(bind(&MainThread::groundDisconnected, this));
 	
 	gc.setRecvHandler(ImageDetails, [](OByteArray data)->void{
@@ -112,11 +88,28 @@ MainThread::MainThread() :
 		cout<<"CameraDownload" <<endl;
 	});
 	
-	
-	
+	gc.setRecvHandler(ImageDetails, [this](OByteArray data)->void{
+		cout<<"ImageDetails" <<endl;
+		this->writeImageDb();
+	});
 	//**************************************************
 	//
 	//**************************************************
+	
+	//initialize the video thread to handle grabbing the video frames
+	vthread = new VideoThread(&gc, info);
+	vthread->start();
+	
+	//setup the timeout function so the multicast socket
+	//emits a packet every one second or so
+	multTimer.callback(bind(&MainThread::multTimeout, this));
+	multTimer.start(100, OO::Repeat);
+	
+	
+	//setup the serial connection to the arduino, so we can send it commands
+	//to control the camera
+	arduino.reset(new OSerial());
+	
 }
 
 void MainThread::multTimeout() {
@@ -136,64 +129,19 @@ void MainThread::incommingConnection(OO::HANDLE fd) {
 		cout<<"New Ground Socket" <<endl;
 		multTimer.stop();
 		gc.setFileDescriptor(fd);
-		
-		if(videopacks.size()) ground->enableReadyWrite();
 	}
 }
 
 void MainThread::writeImageDb() {
-	if(ground) {
-		OByteArray data;
-		
-		PacketLength dlen = 0;
-		PacketType dtype = ImageDetails;
-		
-		//serialize all the data into the binary container
-		data<<dlen <<dtype <<db;
-		
-		//go back to the beginning of the binary data container
-		data.seek(0, OO::beg);
-		
-		//insert the actual length of the packet
-		dlen = data.size() - sizeof(dlen);
-		data<<dlen;
-		
-		//write the data to the socket
-		ground->write(data);
-	}
-}
-
-void MainThread::videoRead() {
-	OByteArray data = video->readAll();
-	
-	if(ground) {
-		if(data.size() > 1) {
-			//more then one byte was written to the socket, this means that some useful
-			//information was written to the pipe, forward this information to the
-			//ground
-			OByteArray pack;
-			
-			PacketType type = ErrorMsg;
-			PacketLength length;
-			
-			pack<<length <<type <<data;
-			length = pack.size() - sizeof(PacketLength);
-			pack.seek(0);
-			pack<<length;
-			
-			ground->write(pack);
-		} else {
-			//only one byte was written to the pipe, this is the signal to enable 
-			//the ready read callback with the ground socket
-			ground->enableReadyWrite();
-		}
+	if(gc.connected()) {
+		OByteArray pack;
+		pack<<db;
+		gc.write(ImageDetails, db);
 	}
 }
 
 void MainThread::groundDisconnected() {
 	cout<<"Ground Disconnected" <<endl;
-	
-	videopacks.clear();
 	
 	multTimer.parent(this);
 	multTimer.callback(bind(&MainThread::multTimeout, this));
@@ -217,14 +165,6 @@ void MainThread::groundReadyRead() {
 		handlePacket(pack);
 	} while(ground->available() > 1000);
 	
-}
-
-void MainThread::groundReadyWrite() {
-	if(videopacks.size()) {
-		OByteArray pack = videopacks.front();
-		ground->write(pack);
-		videopacks.pop_front();
-	}
 }
 
 void MainThread::groundError() {

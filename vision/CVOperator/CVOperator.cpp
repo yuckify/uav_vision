@@ -193,6 +193,7 @@ CVOperator::CVOperator(QWidget *parent) :
 	gc.setSendHandler(CameraPower, 0);
 	gc.setSendHandler(CameraCapture, 0);
 	gc.setSendHandler(CameraDownload, 0);
+	gc.setSendHandler(ImageDetails, 0);
 	
 	
 	//setup the callbacks for the ground connection
@@ -211,6 +212,11 @@ CVOperator::CVOperator(QWidget *parent) :
 		//release memory we won't be using anymore
 		cvReleaseMat(&compFrame);
 		cvReleaseImage(&img);
+	});
+	
+	gc.setRecvHandler(ImageDetails, [&db, this](OByteArray ba)->void{
+		ba>>db;
+		showImageDb(db);
 	});
 	
 }
@@ -569,32 +575,12 @@ void CVOperator::multActivated(int) {
 	
 	OByteArray data = multlisten->readAll(addr);
 	
-	/*
-	if(conn) {
-		delete conn;
-		conn = NULL;
-	}
-	*/
-	
-//	if(!conn) {
 	if(!gc.connected()) {
 		log<<"New Connection to Plane" <<endl;
 		setCVOperatorStatus(true);
 		
 		addr.port(25001);
 		gc.connect(addr);
-		
-		/*
-		conn = new OTcpSocket();
-		addr.port(25001);
-		conn->connect(addr);
-//		conn->connect(addr.ipString(), 25001);
-		conn->readyReadFunc(bind(&CVOperator::connReadyRead, this));
-		conn->disconnectFunc(bind(&CVOperator::connDisconnected, this));
-		connNotifier = new QSocketNotifier(conn->fileDescriptor(),
-										   QSocketNotifier::Read, this);
-		connect(connNotifier, SIGNAL(activated(int)), this, SLOT(connActivated(int)));
-		*/
 	}
 }
 

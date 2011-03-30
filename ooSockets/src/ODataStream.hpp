@@ -191,7 +191,6 @@ protected:
 
 public:
 	explicit ODataStream(OThread* parent) {
-		cout<<"oos ds" <<endl;
 		//create the memory
 		q_mem.reset(new ODataStreamMem(parent));
 		
@@ -552,58 +551,57 @@ protected:
 	}
 	
 	void writeHigh() {
-		for(auto i=q_mem->q_pque.rbegin(); i<q_mem->q_pque.rend(); i++) {
-			//we have found the first queue, check if it contains any chunks of
-			//data to write
-			if(i->hasData()) {
-				//prepare the header for the packet
-				OByteArray head;
-				OByteArray& data = i->q_mem->q_que.front().q_data;
-				
-				//setup the variable that make up the header for this packet
-				PacketLength length = 0;
-				uint8_t config = EndPacket;
-				PacketType type = i->q_mem->q_que.front().q_type;
-				head<<length <<config <<type;
-				
-				head.seek(0);
-				length = data.size() + head.size() - sizeof(PacketLength);
-				head<<length;
-				
-				//assume the whole header will be written...
-				head.seek(0);
-				unsigned head_written = q_mem->q_sock.write(head);
-				
-				//this throws if not all the data in the head gets written
-				assert(head_written == head.size());
-				
-				//write the payload
-				q_mem->q_sock.write(data);
-				
-				//check if we wrote all of the payload or just most of it
-				if(!data.dataLeft()) {
-					//we wrote all this packet pop it from the queue
-					i->q_mem->q_que.pop_front();
-					
-					//we are done here so reset to init
-					q_mem->q_writeState = WriteInit;
-					return;
-				}
-				
-				//store the remaining packet to be written when more room in
-				//the network stack becomes available
-				q_mem->q_writepacket = i->q_mem->q_que.front();
+		auto i=q_mem->q_pque.rbegin();
+		//we have found the first queue, check if it contains any chunks of
+		//data to write
+		if(i->hasData()) {
+			//prepare the header for the packet
+			OByteArray head;
+			OByteArray& data = i->q_mem->q_que.front().q_data;
+			
+			//setup the variable that make up the header for this packet
+			PacketLength length = 0;
+			uint8_t config = EndPacket;
+			PacketType type = i->q_mem->q_que.front().q_type;
+			head<<length <<config <<type;
+			
+			head.seek(0);
+			length = data.size() + head.size() - sizeof(PacketLength);
+			head<<length;
+			
+			//assume the whole header will be written...
+			head.seek(0);
+			unsigned head_written = q_mem->q_sock.write(head);
+			
+			//this throws if not all the data in the head gets written
+			assert(head_written == head.size());
+			
+			//write the payload
+			q_mem->q_sock.write(data);
+			
+			//check if we wrote all of the payload or just most of it
+			if(!data.dataLeft()) {
+				//we wrote all this packet pop it from the queue
 				i->q_mem->q_que.pop_front();
 				
-				q_mem->q_writeState = WriteFinish;
-				
-				return;
-			} else {
-				//else change state to write low
-				q_mem->q_writeState = WriteLow;
-				writeLow();
+				//we are done here so reset to init
+				q_mem->q_writeState = WriteInit;
 				return;
 			}
+			
+			//store the remaining packet to be written when more room in
+			//the network stack becomes available
+			q_mem->q_writepacket = i->q_mem->q_que.front();
+			i->q_mem->q_que.pop_front();
+			
+			q_mem->q_writeState = WriteFinish;
+			
+			return;
+		} else {
+			//else change state to write low
+			q_mem->q_writeState = WriteLow;
+			writeLow();
+			return;
 		}
 		
 		q_mem->q_writeState = WriteLow;
