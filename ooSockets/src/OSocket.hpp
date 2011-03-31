@@ -35,16 +35,18 @@
 #include<OIODevice.hpp>
 #include<OThread.hpp>
 #include<OSockAddress.hpp>
-#include<ONet.hpp>
 #include<OAddressInfo.hpp>
 #include<OSockError.hpp>
 #include<OO.hpp>
+#include<OMacAddress.hpp>
+#include<ONet.hpp>
 
 #ifdef OO_QT
 #include<QObject>
 #include<QSocketNotifier>
 #endif
 
+/*
 #ifdef __linux__
 	#define GS_NOSIGNAL MSG_NOSIGNAL
 	
@@ -59,6 +61,7 @@
 	#define GS_NOSIGNAL SO_NOSIGPIPE
 	
 #endif
+*/
 
 //windows unix compatibility
 #ifdef __windows__
@@ -176,9 +179,6 @@ public:
 	
 	/// Set the hostname of the local machine.
 	static bool hostName(OString name);
-	
-	/// Get a list of network interfaces on the local machine.
-	static ONetList netList();
 	
 	/// Get the most recently generated error.
 	int error() const;
@@ -371,12 +371,14 @@ protected:
 		if(par && fdes) {
 			par->registerReadFD((OO::HANDLE)fdes, this);
 		}
+#ifdef OO_QT
 		if(qtpar && fdes) {
 			qt_read.reset(new QSocketNotifier(fdes, 
 											  QSocketNotifier::Read, this));
 			QObject::connect(qt_read.get(), SIGNAL(activated(int)), 
 							 this, SLOT(readyReadSlot(int)));
 		}
+#endif
 	}
 	
 	/// This get called when it comes time to unregister the file
@@ -387,6 +389,12 @@ protected:
 			par->unregisterWriteFD((OO::HANDLE)fdes);
 			par->unregisterPriorityFD((OO::HANDLE)fdes);
 		}
+#ifdef OO_QT
+		if(qtpar) {
+			qt_read.reset(NULL);
+			qt_write.reset(NULL);
+		}
+#endif
 	}
 	
 	static void* get_in_addr(struct sockaddr* sa);

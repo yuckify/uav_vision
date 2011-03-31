@@ -156,7 +156,7 @@ public:
 	 *	reallocation penalty. If large amounts of data are prepended
 	 *	the binary data container will expand to accommodate.
 	*/
-	explicit OByteArray(int n = 30, OO::Endian end = OO::LittleEndian, int p = 20);
+	explicit OByteArray(int n = 30, OO::Endian end = OO::LittleEndian);
 	
 	/**	The copy constructor.
 	 *	@param old The OByteArray obect being copied.
@@ -295,11 +295,6 @@ public:
 	OByteArray& operator<<(uint32_t i);
 	OByteArray& operator<<(uint64_t i);
 	
-//	template<class T> OByteArray& operator<<(T&& item) {
-//		write(item);
-//		return *this;
-//	}
-	
 	/// This function is overloaded.
 	template <class T> OByteArray& operator<<(const vector<T>& vec) {
 		this->write(vec);
@@ -311,59 +306,6 @@ public:
 		this->write(ma);
 		return *this;
 	}
-	
-	/**	Append a piece of data to the very beginning of the binary array.
-	 *	This is allocated so a couple small pieces of data
-	 *	may be appended to the beginning of the array with no memory 
-	 *	reallocation penalty. If large amounts of data are prepended
-	 *	the binary data container will expand to accommodate.
-	*/
-	void prepend(OByteArray& ba);
-	
-	/// This function is overloaded.
-	void prepend(OByteArray&& ba);
-	
-	/// This function is overloaded.
-	void prepend(const OString& str);
-	
-	/// This function is overloaded.
-	void prepend(const OString&& str);
-	
-	/// This function is overloaded.
-	void prepend(const string str);
-	
-	/// This function is overloaded.
-	void prepend(const char* str);
-	
-	/// This function is overloaded.
-	void prepend(const char* str, int len);
-	
-	/// This function is overloaded.
-	void prepend(bool i);
-	
-	/// This function is overloaded.
-	void prepend(int8_t i);
-	
-	/// This function is overloaded.
-	void prepend(int16_t i);
-	
-	/// This function is overloaded.
-	void prepend(int32_t i);
-	
-	/// This function is overloaded.
-	void prepend(int64_t i);
-	
-	/// This function is overloaded.
-	void prepend(uint8_t i);
-	
-	/// This function is overloaded.
-	void prepend(uint16_t i);
-	
-	/// This function is overloaded.
-	void prepend(uint32_t i);
-	
-	/// This function is overloaded.
-	void prepend(uint64_t i);
 	
 	/**	Append a piece of data to the very end of a binary array.
 	 *	
@@ -694,8 +636,6 @@ protected:
 	*/
 	void advanceSize(int addition);
 	
-	void advanceSizePrepend(int addition);
-	
 #if defined(__LITTLE_ENDIAN__)	|| \
 	defined(i686)				|| \
 	defined(__i686)				|| \
@@ -790,9 +730,8 @@ protected:
 	
 	
 	struct OByteArrayMem {
-		OByteArrayMem(int len, int p = 20) {
-			sizeofprepend = p;
-			bytearray.reset(new char[len + sizeofprepend]);
+		OByteArrayMem(int len) {
+			bytearray.reset(new char[len]);
 			sizeofdata = 0;
 			sizeofarray = len;
 			end = OO::LittleEndian;
@@ -802,8 +741,6 @@ protected:
 		int sizeofdata;
 		//the size of the memory being pointed to
 		int sizeofarray;
-		//the amount of memory before the origin
-		int sizeofprepend;
 		//a pointer to the data
 		boost::scoped_array<char> bytearray;
 		
@@ -818,7 +755,6 @@ protected:
 	void makeOwner();
 	
 	void checkResize(int addition);
-	void checkResizePrepend(int addition);
 	
 };
 

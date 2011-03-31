@@ -194,6 +194,7 @@ CVOperator::CVOperator(QWidget *parent) :
 	gc.setSendHandler(CameraCapture, 0);
 	gc.setSendHandler(CameraDownload, 0);
 	gc.setSendHandler(ImageDetails, 0);
+	gc.setSendHandler(CompressionMethod, 0);
 	
 	
 	//setup the callbacks for the ground connection
@@ -291,20 +292,11 @@ void CVOperator::zoomSliderSet(int val) {
 }
 
 void CVOperator::compPressed() {
-	if(conn) {
+	if(gc.connected()) {
 		OByteArray pack;
-		
-		PacketType type = CompressionMethod;
-		PacketLength length;
 		OString compmeth = compress->text();
-		
-		pack<<length <<type <<compmeth;
-		
-		length = pack.size() - sizeof(PacketLength);
-		pack.seek(0);
-		pack<<length;
-		
-		conn->write(pack);
+		pack<<compmeth;
+		gc.write(CompressionMethod, pack);
 	} else {
 		log<<error <<"Error: Not Connected" <<endl;
 	}

@@ -22,11 +22,10 @@ void VideoThread::run() {
 	p[0] = CV_IMWRITE_JPEG_QUALITY;
 	p[1] = 100;
 	p[2] = 0;
-	uint32_t imagecount=0;
 	
 	while(1) {
 		//Grab Frames
-		frame = cvQueryFrame( capture );
+		frame = cvQueryFrame(capture);
 		
 		if(!frame) {
 			cout<<"Error Capturing Frame" <<endl;
@@ -45,7 +44,6 @@ void VideoThread::run() {
 			OString msg;
 			msg<<"Error: Compression method \'" <<compext <<"\' is not supported, "
 					<<"reseting to default \'.jpeg\'";
-			
 			
 			compext = ".jpeg";
 			temp = cvEncodeImage(compext.toCString(), frame, p); //Encode image as Jpeg

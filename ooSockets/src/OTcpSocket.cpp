@@ -5,7 +5,7 @@ OTcpSocket::OTcpSocket(OThread *parent) : OSocket(parent) {
 }
 
 OTcpSocket::OTcpSocket(QObject *parent) : OSocket(parent) {
-	cout<<"qt sock" <<endl;
+	
 }
 
 bool OTcpSocket::connect(OString addr, 

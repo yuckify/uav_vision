@@ -220,7 +220,7 @@ bool OUdpSocket::addMembership(OSockAddress group, OSockAddress ifa) {
 			//if not get the proper address for the requested interface
 			OSockAddress ifaddr;
 			if(ifa.isIpv6()) {
-				ONetList nets = OSocket::netList().filterByIp4(ifa.ipString());
+				ONetList nets = ONet::netList().filterByIp4(ifa.ipString());
 				if(nets.size() > 0) ifaddr = nets[0].ip4Address();
 				else return false;
 			} else {
@@ -254,7 +254,7 @@ bool OUdpSocket::addMembership(OSockAddress group, OSockAddress ifa) {
 #endif
 			
 			//we need to get the interface
-			ONetList nets = OSocket::netList().filterByIp4(ifa.ipString());
+			ONetList nets = ONet::netList().filterByIp4(ifa.ipString());
 			ONet net;
 			if(nets.size() > 0) net = nets[0];
 			else return false;

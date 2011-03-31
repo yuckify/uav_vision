@@ -72,12 +72,8 @@ private:
 	VideoThread* vthread;
 	
 	//this socket is for communicating with the vision ground station
-	OTcpSocket* ground;
+//	OTcpSocket* ground;
 	void groundDisconnected();
-	void groundReadyRead();
-	void groundReadyWrite();
-	void groundError();
-	void handlePacket(OByteArray& pack);
 	
 	ODataStream<uint32_t, uint8_t, OO::LittleEndian, true> gc;
 	

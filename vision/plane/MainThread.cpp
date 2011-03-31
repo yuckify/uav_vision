@@ -88,6 +88,13 @@ MainThread::MainThread() :
 		cout<<"CameraDownload" <<endl;
 	});
 	
+	gc.setRecvHandler(CompressionMethod, [&vthread](OByteArray data)->void{
+		cout<<"CompressionMethod" <<endl;
+		OString comp;
+		data>>comp;
+		vthread->setCompression(comp);
+	});
+	
 	gc.setRecvHandler(ImageDetails, [this](OByteArray data)->void{
 		cout<<"ImageDetails" <<endl;
 		this->writeImageDb();
@@ -146,101 +153,6 @@ void MainThread::groundDisconnected() {
 	multTimer.parent(this);
 	multTimer.callback(bind(&MainThread::multTimeout, this));
 	multTimer.start(100, OO::Repeat);
-}
-
-void MainThread::groundReadyRead() {
-	do {
-		OByteArray head = ground->read(sizeof(PacketLength));
-		
-		PacketLength length;
-		head>>length;
-		
-		while(length > ground->available()) {
-			usleep(100);
-		}
-		
-		
-		OByteArray pack = ground->read(length);
-		
-		handlePacket(pack);
-	} while(ground->available() > 1000);
-	
-}
-
-void MainThread::groundError() {
-	cout<<"Error: " <<ground->error() <<" " <<ground->strerror() <<endl;
-}
-
-void MainThread::handlePacket(OByteArray &pack) {
-	PacketType type;
-	pack>>type;
-	
-	switch(type) {
-	case ImageDetails: {
-			this->writeImageDb();
-			break;
-		}
-	case CompressionMethod: {
-			OString tmp;
-			pack>>tmp;
-			vthread->setCompression(tmp);
-			
-			break;
-		}
-	case CameraZoomIn: {
-			cout<<"Zoom In" <<endl;
-			int zlen = 1;
-			pack>>zlen;
-			OString zoomstr;
-			zoomstr<<zlen;
-			
-			OByteArray msg;
-			msg<<zoomstr <<(char)ZoomIn;
-			
-			camcontrol.write(msg);
-			break;
-		}
-	case CameraZoomOut: {
-			cout<<"Zoom Out" <<endl;
-			int zlen = 1;
-			pack>>zlen;
-			OString zoomstr;
-			zoomstr<<zlen;
-			
-			OByteArray msg;
-			msg<<zoomstr <<(char)ZoomOut;
-			
-			camcontrol.write(msg);
-			break;
-		}
-	case CameraCapture: {
-			cout<<"Capture" <<endl;
-			OByteArray msg;
-			msg<<(char)Capture;
-			
-			camcontrol.write(msg);
-			break;
-		}
-	case CameraPower: {
-			OByteArray msg;
-			msg<<(char)Power;
-			
-			camcontrol.write(msg);
-			
-			break;
-		}
-	case CameraDownload: {
-			cout<<"Download" <<endl;
-			OByteArray msg;
-			msg<<(char)UsbEnable;
-			
-			camcontrol.write(msg);
-			
-			cameratimer.start(5000);
-			
-			break;
-		}
-	}
 }
 
 void MainThread::readCameraFiles() {
@@ -368,18 +280,10 @@ void MainThread::camControlRead() {
 					cambuff.clear();
 				}
 				
-				if(ground && state) {
+				if(gc.connected() && state) {
 					OByteArray pack;
-					PacketType type = CameraStatus;
-					PacketLength length = 0;
-					
-					pack<<length <<type <<state;
-					
-					pack.seek(0);
-					length = pack.size() - sizeof(PacketLength);
-					pack<<length;
-					
-					ground->write(pack);
+					pack<<state;
+					gc.write(CameraStatus, pack);
 				}
 			}
 		}

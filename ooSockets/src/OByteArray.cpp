@@ -4,8 +4,8 @@ void (OByteArray::*OByteArray::seekSwitch[])(int) = {&OByteArray::seekEnd,
 													 &OByteArray::seekBegin, 
 													 &OByteArray::seekCurrent};
 
-OByteArray::OByteArray(int n, OO::Endian end, int p) : 
-		mem(new OByteArrayMem(n, p)) {
+OByteArray::OByteArray(int n, OO::Endian end) : 
+		mem(new OByteArrayMem(n)) {
 	mem->end = end;
 	streamptr = 0;
 }
@@ -290,151 +290,6 @@ OByteArray& OByteArray::operator<<(uint32_t i) {
 OByteArray& OByteArray::operator<<(uint64_t i) {
 	write(i);
 	return *this;
-}
-
-void OByteArray::prepend(OByteArray& ba) {
-	
-}
-
-void OByteArray::prepend(OByteArray&& ba) {
-	
-}
-
-void OByteArray::prepend(const OString& str) {
-	
-}
-
-void OByteArray::prepend(const OString&& str) {
-	
-}
-
-void OByteArray::prepend(const string str) {
-	
-}
-
-void OByteArray::prepend(const char* str) {
-	
-}
-
-void OByteArray::prepend(const char* str, int len) {
-	
-}
-
-void OByteArray::prepend(bool i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	bool* tmpptr = (bool*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(int8_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	int8_t* tmpptr = (int8_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(int16_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	int16_t* tmpptr = (int16_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(int32_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	int32_t* tmpptr = (int32_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(int64_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	int64_t* tmpptr = (int64_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(uint8_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	uint8_t* tmpptr = (uint8_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(uint16_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	uint16_t* tmpptr = (uint16_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(uint32_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	uint32_t* tmpptr = (uint32_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
-}
-
-void OByteArray::prepend(uint64_t i) {
-	register int len = sizeof(i);
-	checkResizePrepend(len);
-	
-	uint64_t* tmpptr = (uint64_t*)(this->data() - len);
-	
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	*tmpptr = htole(i);
-	else								*tmpptr = htobe(i);
-	
-	this->advanceSizePrepend(len);
 }
 
 void OByteArray::append(OByteArray& ba) {
@@ -909,13 +764,6 @@ void OByteArray::advanceSize(int addition) {
 		mem->sizeofdata = asize;
 }
 
-void OByteArray::advanceSizePrepend(int addition) {
-	mem->sizeofprepend -= addition;
-	mem->sizeofdata += addition;
-	mem->sizeofarray += addition;
-	seek(addition, OO::cur);
-}
-
 char* OByteArray::tellData() {
 	return begin() + streamptr;
 }
@@ -944,7 +792,6 @@ const char* OByteArray::constData() const {
 
 void OByteArray::clear() {
 	mem->sizeofdata = 0;
-	mem->sizeofprepend = 20;
 	streamptr = 0;
 }
 
@@ -959,35 +806,24 @@ void OByteArray::setEndian(OO::Endian end) {
 
 OByteArray::Iterator OByteArray::end() {
 	makeOwner();
-	return mem->bytearray.get() + mem->sizeofdata + mem->sizeofprepend;
+	return mem->bytearray.get() + mem->sizeofdata;
 }
 
 OByteArray::Iterator OByteArray::begin() {
 	makeOwner();
-	return mem->bytearray.get() + mem->sizeofprepend;
+	return mem->bytearray.get();
 }
 
 OByteArray::ConstIterator OByteArray::end() const {
-	return mem->bytearray.get() + mem->sizeofdata + mem->sizeofprepend;
+	return mem->bytearray.get() + mem->sizeofdata;
 }
 
 OByteArray::ConstIterator OByteArray::begin() const {
-	return mem->bytearray.get() + mem->sizeofprepend;
+	return mem->bytearray.get();
 }
 
 void OByteArray::makeOwner() {
 	if(mem.use_count() > 1) {
-		/*
-		cout<<"making owner" <<endl;
-		OByteArrayMem* tmp = new OByteArrayMem(mem->sizeofarray);
-		::memcpy(tmp->bytearray.get()+tmp->sizeofprepend,
-				 mem->bytearray.get()+mem->sizeofprepend,
-				 size());
-		seek(streamptr);
-		tmp->dir = this->mem->dir;
-		tmp->end = this->mem->end;
-		mem.reset(tmp);
-		*/
 		OByteArray tmp(mem->sizeofarray);
 		tmp.write(this->begin(), mem->sizeofarray);
 		tmp.seek(streamptr);
@@ -1025,31 +861,3 @@ void OByteArray::checkResize(int addition) {
 	}
 }
 
-void OByteArray::checkResizePrepend(int addition) {
-	if(addition < 0) return;
-	
-	if(mem.use_count() > 1) {
-		int prep = mem->sizeofprepend;
-		OByteArray tmp(mem->sizeofarray + prep);
-		tmp.mem->sizeofprepend += prep;
-		tmp.mem->sizeofarray -= prep;
-		tmp.write(this->data(), this->size());
-		tmp.seek(this->tell());
-		tmp.mem->dir = this->mem->dir;
-		tmp.mem->end = this->mem->end;
-		*this = tmp;
-	} else if(addition > mem->sizeofprepend) {
-		int mult = 2;
-		while(addition > mem->sizeofprepend * mult) mult<<1;
-		
-		int prep = mem->sizeofprepend*mult;
-		OByteArray tmp(mem->sizeofarray + prep);
-		tmp.mem->sizeofprepend += prep;
-		tmp.mem->sizeofarray -= prep;
-		tmp.write(this->data(), this->size());
-		tmp.seek(this->tell());
-		tmp.mem->dir = this->mem->dir;
-		tmp.mem->end = this->mem->end;
-		*this = tmp;
-	}
-}

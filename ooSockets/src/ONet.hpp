@@ -33,10 +33,82 @@
 #include<OMacAddress.hpp>
 #include<OO.hpp>
 
-#ifndef __windows__
-	#include<sys/socket.h>
-	#include<net/if.h>
+#include<net/if.h>
+#include<ifaddrs.h>
+
+#ifdef __linux__
+	#define GS_NOSIGNAL MSG_NOSIGNAL
+	
+	//AF_LINK (BSD) == PF_PACKET (linux)
+	#ifndef AF_LINK
+		#define AF_LINK PF_PACKET
+	#endif
+	
+#elif defined(__apple__)
+	#include<pcap/bpf.h>
+	#include<net/if_dl.h>
+	#define GS_NOSIGNAL SO_NOSIGPIPE
+	
 #endif
+
+class ONet;
+
+/**	This list template was implemented specifically for the ONet class. It adds a 
+ *	few features to make it easier to manage a list of network interfaces.
+*/
+template <class T = ONet> class basic_netlist : public OList<ONet> {
+public:
+	/**	Filter the list of network interfaces based on some regular expression. 
+	 *	This function uses boost::regex to match.
+	 *	@param str The regular expression to be matched.
+	 *	@return The list of network interfaces where the name matches the regular 
+	 *	expression.
+	*/
+	basic_netlist<T> filterByName(OString str) {
+		boost::regex exp(str);
+		
+		basic_netlist<T> ret;
+		
+		unsigned length = size();
+		for(unsigned i=0; i<length; i++) {
+			if(boost::regex_match(at(i).name(), exp))
+				ret.push_back(at(i));
+		}
+		
+		return ret;
+	}
+	
+	basic_netlist<T> filterByIp4(OString str) {
+		boost::regex exp(str);
+		
+		basic_netlist<T> ret;
+		
+		unsigned length = size();
+		for(unsigned i=0; i<length; i++) {
+			if(boost::regex_match(at(i).ip4String(), exp))
+				ret.push_back(at(i));
+		}
+		
+		return ret;
+	}
+	
+	basic_netlist<T> filterByIp6(OString str) {
+		boost::regex exp(str);
+		
+		basic_netlist<T> ret;
+		
+		unsigned length = size();
+		for(unsigned i=0; i<length; i++) {
+			if(boost::regex_match(at(i).ip6String(), exp))
+				ret.push_back(at(i));
+		}
+		
+		return ret;
+	}
+	
+};
+
+typedef basic_netlist<> ONetList;
 
 /*!	The ONetList is what the GSocket class returns when a list of networking 
  *	interfaces is requested. This class acts to wrap a single network interface 
@@ -116,6 +188,8 @@ public:
 	/// interface when setting up an ipv6 multicast listening socket.
 	unsigned index() const;
 	
+	static ONetList netList();
+	
 protected:
 	OString			ifa_name;		//network interface name
 	OMacAddress		ifa_mac;		//mac address
@@ -124,62 +198,5 @@ protected:
 	OSockAddress	ifa_addrbroad;	//broadcast address
 	OSockAddress	ifa_netmask;	//subnet mask
 };
-
-/**	This list template was implemented specifically for the ONet class. It adds a 
- *	few features to make it easier to manage a list of network interfaces.
-*/
-template <class T = ONet> class basic_netlist : public OList<ONet> {
-public:
-	/**	Filter the list of network interfaces based on some regular expression. 
-	 *	This function uses boost::regex to match.
-	 *	@param str The regular expression to be matched.
-	 *	@return The list of network interfaces where the name matches the regular 
-	 *	expression.
-	*/
-	basic_netlist<T> filterByName(OString str) {
-		boost::regex exp(str);
-		
-		basic_netlist<T> ret;
-		
-		unsigned length = size();
-		for(unsigned i=0; i<length; i++) {
-			if(boost::regex_match(at(i).name(), exp))
-				ret.push_back(at(i));
-		}
-		
-		return ret;
-	}
-	
-	basic_netlist<T> filterByIp4(OString str) {
-		boost::regex exp(str);
-		
-		basic_netlist<T> ret;
-		
-		unsigned length = size();
-		for(unsigned i=0; i<length; i++) {
-			if(boost::regex_match(at(i).ip4String(), exp))
-				ret.push_back(at(i));
-		}
-		
-		return ret;
-	}
-	
-	basic_netlist<T> filterByIp6(OString str) {
-		boost::regex exp(str);
-		
-		basic_netlist<T> ret;
-		
-		unsigned length = size();
-		for(unsigned i=0; i<length; i++) {
-			if(boost::regex_match(at(i).ip6String(), exp))
-				ret.push_back(at(i));
-		}
-		
-		return ret;
-	}
-	
-};
-
-typedef basic_netlist<> ONetList;
 
 #endif // ONet_H
