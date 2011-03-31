@@ -36,7 +36,7 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_system \
 	`pkg-config --libs opencv`
 
-DEFINES += OO_OPENCV OO_ALL
+DEFINES += OO_OPENCV
 
 SOURCES += main.cpp \
     MainThread.cpp \

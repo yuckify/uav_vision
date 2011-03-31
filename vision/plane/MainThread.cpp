@@ -7,8 +7,8 @@ void DebugMsg(OString str) {
 }
 
 MainThread::MainThread() :
-	initserial(this), initsertimer(this), multTimer(this), 
-	cameratimer(this), gc(this) {
+	multTimer(this), gc(this), cameratimer(this), 
+	initserial(this), initsertimer(this) {
 	//setup the database files
 	if(bfs::is_directory(DBPATH)) {
 		//if the directory exists then this is not a cold start
@@ -209,7 +209,7 @@ void MainThread::initSerialRead() {
 	
 	OByteArray data = initserial.readAll();
 	
-	for(int i=0; i<data.size(); i++) {
+	for(unsigned i=0; i<data.size(); i++) {
 		if(data.data()[i])
 			tmpserbuf.push_back(data.data()[i]);
 	}
@@ -307,13 +307,13 @@ void MainThread::autoPilotRead() {
 	packnum++;
 	OByteArray data = autopilot.readAll();
 	
-	for(int i=0; i<data.size(); i++) {
+	for(unsigned i=0; i<data.size(); i++) {
 		if(!data.data()[i]) return;
 	}
 	
 	//read the data from the raw binary data container and push it in
 	//the string packet buffer
-	for(int i=0; i<data.size(); i++) {
+	for(unsigned i=0; i<data.size(); i++) {
 		char ch = data.data()[i];
 		serialbuf.push_back(ch);
 	}

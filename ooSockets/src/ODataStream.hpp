@@ -88,41 +88,50 @@ protected:
 		public:
 			ODSOutQueueMem() {
 				q_secure = false;
+				q_writing = false;
 			}
 			
 			list<Packet>						q_que;
 			bst::mutex							q_mutex;
 			uint16_t							q_priority;
 			bool								q_secure;
+			bool								q_writing;
 		};
 	public:
 		shared_ptr<ODSOutQueueMem>				q_mem;
 		
 		ODSOutQueue() : q_mem(new ODSOutQueueMem()) {}
 		
-		uint16_t priority() {
+		inline uint16_t priority() {
 			return q_mem->q_priority;
 			return 0;
 		}
 		
-		void setPriority(uint16_t p) {
+		inline void lock() {
+			q_mem->q_mutex.lock();
+		}
+		
+		inline void unlock() {
+			q_mem->q_mutex.unlock();
+		}
+		
+		inline void setPriority(uint16_t p) {
 			q_mem->q_priority = p;
 		}
 		
-		bool isSecure() {
+		inline bool isSecure() {
 			return q_mem->q_secure;
 		}
 		
-		void setSecure(bool secure) {
+		inline void setSecure(bool secure) {
 			q_mem->q_secure = secure;
 		}
 		
-		bool hasData() {
+		inline bool hasData() {
 			return q_mem->q_que.size();
 		}
 		
-		void write(uint16_t type, OByteArray data) {
-			bst::unique_lock<bst::mutex> locker(q_mem->q_mutex);
+		inline void write(uint16_t type, OByteArray data) {
 			q_mem->q_que.push_back(Packet(type, data));
 		}
 	};
@@ -174,7 +183,7 @@ protected:
 		vector<ODSOutQueue>					q_pque;
 		//the offset in the array is the packetId, value is the queue
 		vector<ODSOutQueue>					q_ique;
-		int									q_packetsize;
+		unsigned							q_packetsize;
 		OTcpSocket							q_sock;
 		function<void ()>					q_disconnect;
 		//array offset is the id of the packet, value is the function
@@ -359,6 +368,7 @@ public:
 		
 		//set that we want to use this specific queue with this packetId
 		q_mem->q_ique[packetId] = q_mem->q_pque[priority];
+		q_mem->q_ique[packetId].q_mem->q_writing = true;
 	}
 	
 	/**	This function sets a function to be called when a packet with
@@ -414,19 +424,24 @@ public:
 	 *	@param data The data that is being transmitted.
 	*/
 	void write(uint16_t packetId, OByteArray data) {
-		boost::unique_lock<boost::mutex> locker(q_mem->q_writetex);
 		data.seek(0);
 		
 		if(q_mem->q_ique.size() <= packetId) return;
 		
-		q_mem->q_ique[packetId].write(packetId, data);
-		q_mem->q_sock.enableReadyWrite();
-		
-		//if the thread writing the data is not the one that created
-		//this ODataStream then pipe some data over to the one that did make
-		//this ODatastream
-		OByteArray d("d", 1);
-		q_mem->q_activity.write(d);
+		boost::mutex& tex = q_mem->q_ique[packetId].q_mem->q_mutex;
+		boost::unique_lock<boost::mutex> locker(tex);
+		if(q_mem->q_ique[packetId].q_mem->q_writing) {
+			q_mem->q_ique[packetId].write(packetId, data);
+			q_mem->q_sock.enableReadyWrite();
+			
+			//if the thread writing the data is not the one that created
+			//this ODataStream then pipe some data over to the one that did make
+			//this ODatastream
+			if(q_mem->q_creator != pthread_self()) {
+				OByteArray d("d", 1);
+				q_mem->q_activity.write(d);
+			}
+		}
 	}
 	
 	/**	Returns true if all the members in this instance have been
@@ -554,6 +569,7 @@ protected:
 		auto i=q_mem->q_pque.rbegin();
 		//we have found the first queue, check if it contains any chunks of
 		//data to write
+		i->lock();
 		if(i->hasData()) {
 			//prepare the header for the packet
 			OByteArray head;
@@ -571,13 +587,18 @@ protected:
 			
 			//assume the whole header will be written...
 			head.seek(0);
-			unsigned head_written = q_mem->q_sock.write(head);
-			
-			//this throws if not all the data in the head gets written
-			assert(head_written == head.size());
+			if(q_mem->q_sock.write(head) < 0) {
+				//the connection was closed so just unlock the mutex and return
+				i->unlock();
+				return;
+			}
 			
 			//write the payload
-			q_mem->q_sock.write(data);
+			if(q_mem->q_sock.write(data) < 0) {
+				//the connection was closed so just unlock the mutex and return
+				i->unlock();
+				return;
+			}
 			
 			//check if we wrote all of the payload or just most of it
 			if(!data.dataLeft()) {
@@ -586,6 +607,7 @@ protected:
 				
 				//we are done here so reset to init
 				q_mem->q_writeState = WriteInit;
+				i->unlock();
 				return;
 			}
 			
@@ -596,14 +618,17 @@ protected:
 			
 			q_mem->q_writeState = WriteFinish;
 			
+			i->unlock();
 			return;
 		} else {
 			//else change state to write low
+			i->unlock();
 			q_mem->q_writeState = WriteLow;
 			writeLow();
 			return;
 		}
 		
+		i->unlock();
 		q_mem->q_writeState = WriteLow;
 		writeLow();
 	}
@@ -612,6 +637,7 @@ protected:
 		//start with the first packetwe looked at last after a call to write
 		//the highest priority packet
 		for(auto i=q_mem->q_pque.rbegin()+1; i<q_mem->q_pque.rend(); i++) {
+			i->lock();
 			if(i->hasData()) {
 				//prepare the header for the packet
 				OByteArray head;
@@ -635,13 +661,18 @@ protected:
 				
 				//assume the whole header will be written...
 				head.seek(0);
-				unsigned head_written = q_mem->q_sock.write(head);
-				
-				//this throws if not all the data in the head gets written
-				assert(head_written == head.size());
+				if(q_mem->q_sock.write(head) < 0) {
+					//the connection was closed so just unlock the mutex and return
+					i->unlock();
+					return;
+				}
 				
 				//write the payload
-				q_mem->q_sock.write(data, datalen);
+				if(q_mem->q_sock.write(data, datalen) < 0) {
+					//the connection was closed so just unlock the mutex and return
+					i->unlock();
+					return;
+				}
 				
 				//check if we wrote all of the payload or just most of it
 				if(!data.dataLeft()) {
@@ -650,6 +681,8 @@ protected:
 					
 					//we are done here so reset to init
 					q_mem->q_writeState = WriteInit;
+					
+					i->unlock();
 					return;
 				}
 				
@@ -660,8 +693,10 @@ protected:
 				
 				q_mem->q_writeState = WriteFinish;
 				
+				i->unlock();
 				return;
 			}
+			i->unlock();
 		}
 		q_mem->q_writeState = WriteInit;
 	}
@@ -692,7 +727,9 @@ protected:
 		q_mem->q_readhead = true;
 		q_mem->q_head.clear();
 		for(auto i=q_mem->q_pque.begin(); i<q_mem->q_pque.end(); i++) {
+			i->lock();
 			i->q_mem->q_que.clear();
+			i->unlock();
 		}
 		for(auto i=q_mem->q_recvBuff.begin(); i<q_mem->q_recvBuff.end(); i++) {
 			i->clear();

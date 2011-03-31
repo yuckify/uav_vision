@@ -34,6 +34,7 @@
 #include<map>
 #include<fstream>
 #include<functional>
+#include<vector>
 
 #include<boost/crc.hpp>
 #include<boost/scoped_array.hpp>
@@ -220,7 +221,7 @@ public:
 	void write(const char* str);
 	
 	/// This function is overloaded.
-	void write(const char* str, int len);
+	void write(const void* str, int len);
 	
 	/// This function is overloaded.
 	void write(OSerializable& obj);
@@ -468,8 +469,8 @@ public:
 	*/
 	bool saveFile(OString fn);
 	
-	static OList<OByteArray> chunkData(const char* data, int dsize, int size);
-	static OList<OByteArray> chunkDataWithHeader(const char* data, int dsize, int size,
+	static OList<OByteArray> chunkData(const void* data, int dsize, int size);
+	static OList<OByteArray> chunkDataWithHeader(const void* data, int dsize, int size,
 												 function<void (OByteArray&, int, int)> cbk);
 	
 	/**	This OByteArray is split into an array of pieces of
@@ -540,7 +541,7 @@ public:
 	
 	int find(const OByteArray& data, int start = 0);
 	
-	int find(const char* data, int length, int start = 0);
+	int find(const void* data, int length, int start = 0);
 	
 	/**	Read an arbitrary amount of data out of the OByteArray.
 	 *	@param ptr The data to be read will be copied to this pointer.
@@ -571,33 +572,30 @@ public:
 	*/
 	void seek(int pos, OO::IOBase base = OO::beg);
 	
-	/**	Get a pointer to the data at the current position of the
-	 *	stream pointer.
-	*/
-	char* tellData();
-	
-	const char* constTellData() const;
-	
 	/**	Get the amount of data after the current position of the
 	 *	stream pointer.
 	*/
-	int dataLeft() const;
+	unsigned dataLeft() const;
 	
 	/**	The amount of data being stored in this OByteArray.
 	*/
 	unsigned size() const;
 	
-	/**	Increase the storage size of this OByteArray by len.
+	/**	Set the storage size of this OByteArray by len.
 	 */
 	void resize(int len);
 	
+	/**	Increase the storage size of this OByteArray by len.
+	 */
+	void enlarge(int len);
+	
 	/**	Get a pointer to the beginning of the data.
 	*/
-	char* data();
+	unsigned char* data();
 	
 	/**	Get a const pointer to the beginning of the data.
 	*/
-	const char* constData() const;
+	const unsigned char* constData() const;
 	
 	/**	Clear the contents of this OByteArray.
 	 */
@@ -613,12 +611,22 @@ public:
 	*/
 	void setEndian(OO::Endian end);
 	
-	typedef char* Iterator;
-	typedef const char* ConstIterator;
+	typedef unsigned char* Iterator;
+	typedef const unsigned char* ConstIterator;
 	Iterator end();
 	Iterator begin();
 	ConstIterator end() const;
 	ConstIterator begin() const;
+	
+	/**	Get a pointer to the data at the current position of the
+	 *	stream pointer.
+	*/
+	Iterator tellData();
+	
+	ConstIterator tellData() const;
+	
+	ConstIterator constTellData() const;
+	
 	
 protected:
 	
@@ -636,6 +644,11 @@ protected:
 	*/
 	void advanceSize(int addition);
 	
+<<<<<<< HEAD
+=======
+//	void advanceSizePrepend(int addition);
+	
+>>>>>>> 8899a7488ad38af27a9d41b557f11b1965cd38ae
 #if defined(__LITTLE_ENDIAN__)	|| \
 	defined(i686)				|| \
 	defined(__i686)				|| \
@@ -730,6 +743,7 @@ protected:
 	
 	
 	struct OByteArrayMem {
+<<<<<<< HEAD
 		OByteArrayMem(int len) {
 			bytearray.reset(new char[len]);
 			sizeofdata = 0;
@@ -743,6 +757,13 @@ protected:
 		int sizeofarray;
 		//a pointer to the data
 		boost::scoped_array<char> bytearray;
+=======
+		OByteArrayMem(int len, int p = 20) : bytes(len) {
+			end = OO::LittleEndian;
+		}
+		
+		vector<unsigned char> bytes;
+>>>>>>> 8899a7488ad38af27a9d41b557f11b1965cd38ae
 		
 		OO::Endian end;
 		OO::ArrayBase dir;
@@ -754,8 +775,11 @@ protected:
 	
 	void makeOwner();
 	
+<<<<<<< HEAD
 	void checkResize(int addition);
 	
+=======
+>>>>>>> 8899a7488ad38af27a9d41b557f11b1965cd38ae
 };
 
 typedef OList<OByteArray> OByteList;
