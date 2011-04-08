@@ -116,6 +116,9 @@ public:
 	int write(OByteArray &data);
 	
 	int write(OByteArray &data, int len);
+	
+	/// Check to see if the connection is still open.
+	bool connected();
 };
 
 #endif // OTcpSocket_H

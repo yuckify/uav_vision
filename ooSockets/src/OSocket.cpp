@@ -2,7 +2,7 @@
 
 bool OSocket::initSockLimit = false;
 
-OSocket::OSocket(OThread *parent) : qt_write(NULL), qt_read(NULL) {
+OSocket::OSocket(OThread *parent) : qt_read(NULL), qt_write(NULL) {
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -27,7 +27,7 @@ OSocket::OSocket(OThread *parent) : qt_write(NULL), qt_read(NULL) {
 }
 
 #ifdef OO_QT
-OSocket::OSocket(QObject *parent) : qt_write(NULL), qt_read(NULL) {
+OSocket::OSocket(QObject *parent) : qt_read(NULL), qt_write(NULL) {
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -54,9 +54,7 @@ OSocket::OSocket(QObject *parent) : qt_write(NULL), qt_read(NULL) {
 #endif
 
 OSocket::~OSocket() {
-	if(connected()) {
-		close();
-	}
+	close();
 	
 	par = 0;
 	
@@ -429,7 +427,7 @@ void OSocket::setParent(OThread *p) {
 }
 
 bool OSocket::isEmpty() {
-	
+	return !fdes;
 }
 
 OByteArray OSocket::magicPacket(OMacAddress mac) {
@@ -446,10 +444,6 @@ OByteArray OSocket::magicPacket(OMacAddress mac) {
 
 int OSocket::backlog() {
 	return SOMAXCONN;
-}
-
-bool OSocket::connected() {
-	return conn;
 }
 
 OSockAddress OSocket::peerAddress() {

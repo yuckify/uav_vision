@@ -143,10 +143,6 @@ public:
 	///	Close the connection.
 	void close();
 	
-	/// Check to see if the connection is still open. Not for connectionless 
-	/// sockets.
-	bool connected();
-	
 	/// Read in 'len' bytes of data and place it in 'ba'.
 	virtual OByteArray read(int len) = 0;
 	
@@ -347,7 +343,7 @@ protected:
 	OThread* par;
 	
 #ifdef OO_QT
-	/// This is the parent of this objec, for QT compatibility.
+	/// This is the parent of this object, for QT compatibility.
 	QObject* qtpar;
 	
 	unique_ptr<QSocketNotifier> qt_read;

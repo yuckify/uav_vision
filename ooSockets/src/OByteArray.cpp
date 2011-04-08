@@ -84,143 +84,214 @@ void OByteArray::write(const OString&& str) {
 void OByteArray::write(const void* str, int len) {
 	if(len <= 0) return;
 	
-	int ns = tell() + len;
-	if(ns > size())
-		resize(ns);
-	
-	::memcpy(tellData(), str, len);
-	
-	this->seek(len, OO::cur);
+	if(mem->writting) {
+		unsigned ns = tell() + len;
+		if(ns > size())
+			resize(ns);
+		
+		::memcpy(tellData(), str, len);
+		
+		this->seek(len, OO::cur);
+	} else {
+		mem->count += len;
+	}
 }
 
 void OByteArray::write(OSerializable &obj) {
-	makeOwner();
-	
-	mem->dir = OO::Input;
-	obj.serialize(*this, mem->dir);
+	if(mem->writting) {
+		makeOwner();
+		
+		mem->dir = OO::Input;
+		obj.serialize(*this, mem->dir);
+	} else {
+		mem->dir = OO::Input;
+		obj.serialize(*this, mem->dir);
+	}
 }
 
 void OByteArray::write(bool i) {
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	bool* dest = (bool*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		bool* dest = (bool*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(int8_t i) {
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	int8_t* dest = (int8_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		int8_t* dest = (int8_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(int16_t i) {
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	i = htole(i);
-	else								i = htobe(i);
-	
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	int16_t* dest = (int16_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		//check if we need to swap the byte ordering
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
+		
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		int16_t* dest = (int16_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(int32_t i) {
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	i = htole(i);
-	else								i = htobe(i);
-	
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	int32_t* dest = (int32_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		//check if we need to swap the byte ordering
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
+		
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		int32_t* dest = (int32_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(int64_t i) {
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	i = htole(i);
-	else								i = htobe(i);
-	
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	int64_t* dest = (int64_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		//check if we need to swap the byte ordering
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
+		
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		int64_t* dest = (int64_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(uint8_t i) {
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	uint8_t* dest = (uint8_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		uint8_t* dest = (uint8_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(uint16_t i) {
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	i = htole(i);
-	else								i = htobe(i);
-	
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	uint16_t* dest = (uint16_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		//check if we need to swap the byte ordering
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
+		
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		uint16_t* dest = (uint16_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(uint32_t i) {
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	i = htole(i);
-	else								i = htobe(i);
-	
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	uint32_t* dest = (uint32_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		//check if we need to swap the byte ordering
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
+		
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		uint32_t* dest = (uint32_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 void OByteArray::write(uint64_t i) {
-	//check if we need to swap the byte ordering
-	if(mem->end == OO::LittleEndian)	i = htole(i);
-	else								i = htobe(i);
-	
-	int ns = tell() + sizeof(i);
-	if(ns > size())
-		resize(ns);
-	
-	uint64_t* dest = (uint64_t*)tellData();
-	*dest = i;
-	
-	this->seek(sizeof(i), OO::cur);
+	if(mem->writting) {
+		//check if we need to swap the byte ordering
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
+		
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		uint64_t* dest = (uint64_t*)tellData();
+		*dest = i;
+		
+		this->seek(sizeof(i), OO::cur);
+	} else {
+		mem->count += sizeof(i);
+	}
+}
+
+void OByteArray::write(float i) {
+	if(mem->writting) {
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		float* dest = (float*)tellData();
+		*dest = i;
+	} else {
+		mem->count += sizeof(i);
+	}
+}
+
+void OByteArray::write(double i) {
+	if(mem->writting) {
+		unsigned ns = tell() + sizeof(i);
+		if(ns > size())
+			resize(ns);
+		
+		double* dest = (double*)tellData();
+		*dest = i;
+	} else {
+		mem->count += sizeof(i);
+	}
 }
 
 OByteArray& OByteArray::operator<<(OByteArray& ba) {
@@ -303,6 +374,16 @@ OByteArray& OByteArray::operator<<(uint64_t i) {
 	return *this;
 }
 
+OByteArray& OByteArray::operator<<(float i) {
+	write(i);
+	return *this;
+}
+
+OByteArray& OByteArray::operator<<(double i) {
+	write(i);
+	return *this;
+}
+
 void OByteArray::append(OByteArray& ba) {
 	register int pos = tell();
 	this->seek(0, OO::end);
@@ -334,19 +415,19 @@ void OByteArray::append(const OString&& str) {
 void OByteArray::append(const string str) {
 	register int pos = tell();
 	write(str);
-	int seek(pos);
+	this->seek(pos);
 }
 
 void OByteArray::append(const char* str) {
 	register int pos = tell();
 	write(str);
-	int seek(pos);
+	this->seek(pos);
 }
 
 void OByteArray::append(const char* str, int len) {
 	register int pos = tell();
 	write(str, len);
-	int seek(pos);
+	this->seek(pos);
 }
 
 void OByteArray::append(OSerializable& obj) {
@@ -360,14 +441,12 @@ void OByteArray::append(bool i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
 	
-	
 	this->seek(sizeof(i), OO::cur);
 }
 
 void OByteArray::append(int8_t i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
-	
 	
 	this->seek(sizeof(i), OO::cur);
 }
@@ -380,7 +459,6 @@ void OByteArray::append(int16_t i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
 	
-	
 	this->seek(sizeof(i), OO::cur);
 }
 
@@ -391,7 +469,6 @@ void OByteArray::append(int32_t i) {
 	
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
-	
 	
 	this->seek(sizeof(i), OO::cur);
 }
@@ -404,14 +481,12 @@ void OByteArray::append(int64_t i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
 	
-	
 	this->seek(sizeof(i), OO::cur);
 }
 
 void OByteArray::append(uint8_t i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
-	
 	
 	this->seek(sizeof(i), OO::cur);
 }
@@ -424,7 +499,6 @@ void OByteArray::append(uint16_t i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
 	
-	
 	this->seek(sizeof(i), OO::cur);
 }
 
@@ -435,7 +509,6 @@ void OByteArray::append(uint32_t i) {
 	
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
-	
 	
 	this->seek(sizeof(i), OO::cur);
 }
@@ -448,6 +521,20 @@ void OByteArray::append(uint64_t i) {
 	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
 					  *((const unsigned char*)&i+sizeof(i)));
 	
+	
+	this->seek(sizeof(i), OO::cur);
+}
+
+void OByteArray::append(float i) {
+	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
+					  *((const unsigned char*)&i+sizeof(i)));
+	
+	this->seek(sizeof(i), OO::cur);
+}
+
+void OByteArray::append(double i) {
+	mem->bytes.insert((vector<unsigned char>::iterator)end(), *((const unsigned char*)&i), 
+					  *((const unsigned char*)&i+sizeof(i)));
 	
 	this->seek(sizeof(i), OO::cur);
 }
@@ -543,6 +630,26 @@ void OByteArray::read(OString& str) {
 	seek(len+1, OO::cur);
 }
 
+void OByteArray::read(float& i) {
+	float* tmpptr = (float*)constTellData();
+	streamptr += sizeof(i);
+	i = *tmpptr;
+}
+
+void OByteArray::read(double& i) {
+	double* tmpptr = (double*)constTellData();
+	streamptr += sizeof(i);
+	i = *tmpptr;
+}
+
+size_t OByteArray::sizeOf(OSerializable& obj) {
+	OByteArray tmp;
+	tmp.mem->dir = OO::Input;
+	tmp.mem->writting = false;
+	tmp<<obj;
+	return tmp.mem->count;
+}
+
 #ifdef OO_BOTAN
 OByteArray OByteArray::encrypt(Botan::Public_Key* key) {
 	
@@ -617,7 +724,7 @@ OList<OByteArray> OByteArray::chunkDataWithHeader(const void *data, int dsize, i
 	for(int i=0; i<chunks; i++) {
 		OByteArray array;
 		if(cbk) cbk(array, i, size);
-		array.write(data+i*size, size);
+		array.write((char*)data+i*size, size);
 		bytes.push_back(array);
 	}
 	
@@ -625,7 +732,7 @@ OList<OByteArray> OByteArray::chunkDataWithHeader(const void *data, int dsize, i
 	if(remainder) {
 		OByteArray array;
 		if(cbk) cbk(array, chunks, remainder);
-		array.write(data+chunks*size, remainder);
+		array.write((char*)data+chunks*size, remainder);
 		bytes.push_back(array);
 	}
 	
@@ -690,9 +797,7 @@ int OByteArray::find(const OByteArray &data, int start) {
 }
 
 int OByteArray::find(const void *data, int length, int start) {
-	if(start + length > this->size()) return -1;
-	
-	bool equal = false;
+	if(unsigned(start + length) > this->size()) return -1;
 	
 	//do the search for the data
 	int ending = this->size() - (start + length) + 1;
@@ -707,7 +812,7 @@ int OByteArray::find(const void *data, int length, int start) {
 
 int OByteArray::read(void* ptr, int len) {
 	int readlen = 0;
-	if(len > dataLeft()) readlen = dataLeft();
+	if(unsigned(len) > dataLeft()) readlen = dataLeft();
 	else readlen = len;
 	::memcpy(ptr, constTellData(), readlen);
 	this->seek(readlen, OO::cur);
@@ -729,7 +834,7 @@ int OByteArray::tell() const {
 void OByteArray::seek(int pos, OO::IOBase base) {
 	(this->*seekSwitch[base])(pos);
 	
-	if(streamptr > size()) streamptr = size();
+	if(unsigned(streamptr) > size()) streamptr = size();
 	else if(streamptr < 0) streamptr = 0;
 }
 

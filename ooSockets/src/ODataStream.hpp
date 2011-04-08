@@ -483,7 +483,7 @@ protected:
 				//and the other fields
 				///minus the amount that has already been read in
 				if(enableConfig) {
-					static const int header_size = sizeof(PacketLength) +
+					static const unsigned header_size = sizeof(PacketLength) +
 												   sizeof(PacketType) +
 												   sizeof(uint8_t);
 					
@@ -495,7 +495,7 @@ protected:
 					//check if we need to read in more header information
 					q_mem->q_readhead = q_mem->q_head.size() != header_size;
 				} else {
-					static const int header_size = sizeof(PacketLength) +
+					static const unsigned header_size = sizeof(PacketLength) +
 												   sizeof(PacketType);
 					
 					if(q_mem->q_sock.read(q_mem->q_head, header_size - 

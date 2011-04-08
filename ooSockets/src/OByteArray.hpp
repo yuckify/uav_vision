@@ -254,6 +254,12 @@ public:
 	void write(uint64_t i);
 	
 	/// This function is overloaded.
+	void write(float i);
+	
+	/// This function is overloaded.
+	void write(double i);
+	
+	/// This function is overloaded.
 	template <class T> void write(const vector<T>& vec) {
 		OByteArray& arr = *this;
 		uint32_t length = vec.size();
@@ -295,6 +301,8 @@ public:
 	OByteArray& operator<<(uint16_t i);
 	OByteArray& operator<<(uint32_t i);
 	OByteArray& operator<<(uint64_t i);
+	OByteArray& operator<<(float i);
+	OByteArray& operator<<(double i);
 	
 	/// This function is overloaded.
 	template <class T> OByteArray& operator<<(const vector<T>& vec) {
@@ -361,6 +369,12 @@ public:
 	/// This function is overloaded.
 	void append(uint64_t i);
 	
+	/// This function is overloaded.
+	void append(float i);
+	
+	/// This function is overloaded.
+	void append(double i);
+	
 	/**	This function writes a piece of data at the end of the binary
 	 *	array. Calling this function is provided for convenience to 
 	 *	stream in a large number of objects. This function is otherwise 
@@ -410,6 +424,12 @@ public:
 	void read(OString& str);
 	
 	/// This function is overloaded.
+	void read(float& i);
+	
+	/// This function is overloaded.
+	void read(double& i);
+	
+	/// This function is overloaded.
 	template <class T> void read(vector<T>& vec) {
 		vec.clear();
 		
@@ -452,6 +472,13 @@ public:
 		read(item);
 		return *this;
 	}
+	
+	/**	This functions recurses into a user defined data type
+	 *	that subclasses OSerializable to counter the amount of memory
+	 *	that would be used if the object were to be serialized.
+	 *	@return The size of the serialized object.
+	*/
+	static size_t sizeOf(OSerializable& obj);
 	
 #ifdef OO_BOTAN
 	OByteArray encrypt(Botan::Public_Key* key);
@@ -740,12 +767,17 @@ protected:
 	struct OByteArrayMem {
 		OByteArrayMem() {
 			end = OO::LittleEndian;
+			writting = true;
+			count = 0;
 		}
 		
 		vector<unsigned char> bytes;
 		
 		OO::Endian end;
 		OO::ArrayBase dir;
+		
+		bool writting;
+		size_t count;
 	};
 	
 	int streamptr;

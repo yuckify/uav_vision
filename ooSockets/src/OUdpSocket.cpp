@@ -279,7 +279,7 @@ bool OUdpSocket::addMembership(OSockAddress group, OSockAddress ifa) {
 }
 
 bool OUdpSocket::addMembership(OString group, OString ifa) {
-	return false;
+	return addMembership(group, ifa);
 }
 
 void OUdpSocket::setTTL(unsigned int len) {
@@ -350,7 +350,8 @@ OByteArray OUdpSocket::read(OSockAddress& addr, int len) {
 	int recvlen = recvfrom(fdes, ba.tellData(), len, 0, 
 						   addr.data(), &socklen);
 	
-	if(recvlen <= 0) {
+	if(recvlen < 0) {
+		sigError();
 		ba.resize(ba.size() - len);
 	} else {
 		ba.resize(ba.size() - (len - recvlen));
