@@ -1,12 +1,17 @@
 #include"OThread.hpp"
 
-OThread::OThread() : tout(NULL) {
-	is_running = false;
+OThread::OThread() {
+	fdm.reset(NULL);
 	clear();
 }
 
-OThread::OThread(function<void ()> cbk) : tout(NULL) {
-	is_running = false;
+OThread::OThread(OThread &other) {
+	thread = other.thread;
+	fdm = (unique_ptr<OThreadFds>&&)other.fdm;
+}
+
+OThread::OThread(function<void ()> cbk) {
+	fdm.reset(NULL);
 	clear();
 	
 	callback(cbk);
@@ -14,13 +19,37 @@ OThread::OThread(function<void ()> cbk) : tout(NULL) {
 }
 
 OThread::~OThread() {
+	cancel();
+}
+
+OThread OThread::self() {
+#ifdef __windows__
+	
+#else
+	OThread othr;
+	othr.thread = pthread_self();
+	return othr;
+#endif
+}
+
+bool OThread::isSelf() const {
+#ifdef __windows__
+	
+#else
+	return thread == pthread_self();
+#endif
+}
+
+bool OThread::operator ==(OThread& thr) const {
+	return this->thread == thr.thread;
+}
+
+void OThread::cancel() {
 #ifdef __windows__
 
 #else
-	if(isRunning())
-		pthread_cancel(thread);
+	pthread_cancel(thread);
 #endif
-	
 }
 
 void OThread::start() {
@@ -36,77 +65,82 @@ void OThread::exec() {
 }
 
 void OThread::clear() {
-	readMap.clear();
-	priorityMap.clear();
-	writeMap.clear();
-	deltalist.clear();
-	fdmax = 0;
-	FD_ZERO(&readfds);
-	FD_ZERO(&writefds);
-	FD_ZERO(&priorityfds);
+	thread = 0;
 	runCbk = NULL;
 }
 
 bool OThread::execOnce() {
+	if(!fdm) return false;
+	
 #ifdef __windows__
-	if(tout == INFINITE && !readfds.size()) {
+	if(fdm->tout == INFINITE && !fdm->readfds.size()) {
 		return false;
 	}
 
 	//block on the reading fds
-	DWORD ret = WaitForMultipleObjects(readfds.size(), &(*readfds.begin()), false, tout);
+	DWORD ret = WaitForMultipleObjects(fdm->readfds.size(), 
+									   &(*fdm->readfds.begin()), 
+									   false, fdm->tout);
 #else
 	//if there are no more file descriptors and the timeout
 	//is not set, exit the run loop since there is nothing to do
-	if(!readMap.size() && !writeMap.size() && !priorityMap.size() && !tout.get()) {
+	if(!fdm->readMap.size() && 
+	   !fdm->writeMap.size() && 
+	   !fdm->priorityMap.size() && 
+	   !fdm->tout) {
 		return false;
 	}
 
-	fd_set tmpreadset = readfds;
-	fd_set tmpwriteset = writefds;
-	fd_set tmppriorityset = priorityfds;
+	fd_set tmpreadset = fdm->readfds;
+	fd_set tmpwriteset = fdm->writefds;
+	fd_set tmppriorityset = fdm->priorityfds;
 	
 	//block on the reading fds
-	int ret = select(fdmax + 1, &tmpreadset, &tmpwriteset, &tmppriorityset, tout.get());
+	int ret = select(fdm->fdmax + 1, &tmpreadset, 
+					 &tmpwriteset, &tmppriorityset, 
+					 fdm->tout.get());
+	
 #endif
 	
 	//handle any timers that may have expired
 #ifdef __windows__
-	if(ret == WAIT_TIMEOUT && tout != INFINITE) {
+	if(ret == WAIT_TIMEOUT && fdm->tout != INFINITE) {
 #else
-	if(!ret && tout.get()) {
+	if(!ret && fdm->tout) {
 #endif
 		//adjust the delta values in the list
-		for(auto i=deltalist.begin(); i<deltalist.end(); i++) {
-			i->delta -= deltalist[0].delta;
+		for(auto i=fdm->deltalist.begin(); 
+		i<fdm->deltalist.end(); i++) {
+			i->delta -= fdm->deltalist[0].delta;
 		}
 		
 		bool repeat = false;
 		do {
 			//call the callback for the current timer
-			if(deltalist[0].delta.usec() <= 0) {
-				deltalist[0].timer->runLoop();
+			if(fdm->deltalist[0].delta.usec() <= 0) {
+				fdm->deltalist[0].timer->runLoop();
 			} else {
 				break;
 			}
 			
 			//if the timer that was just executed was a single
 			//fire timer remove it from the list
-			if(deltalist[0].timer->type() == OO::Once) {
-				deltalist.removeAt(0);
+			if(fdm->deltalist[0].timer->type() == OO::Once) {
+				fdm->deltalist.removeAt(0);
 			} else {
 				//reset the timer that timed out
-				deltalist[0].delta = deltalist[0].timer->period();
+				fdm->deltalist[0].delta = 
+						fdm->deltalist[0].timer->period();
 			}
 			
 			//resort the delta list
-			sort(deltalist.begin(), deltalist.end(),
+			sort(fdm->deltalist.begin(), fdm->deltalist.end(),
 				 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
 				return a.delta < b.delta;
 			});
 			
-			if(deltalist.size()) {
-				if(deltalist[0].delta <= 0)
+			if(fdm->deltalist.size()) {
+				if(fdm->deltalist[0].delta <= 0)
 					repeat = true;
 				else
 					repeat = false;
@@ -116,29 +150,31 @@ bool OThread::execOnce() {
 		
 		//check to see if we have any timers left to handle
 #ifdef __windows__
-		if(deltalist.size()) {
+		if(fdm->deltalist.size()) {
 			//get the current timeout
-			tout = deltalist[0].timer->period().msec();
+			fdm->tout = fdm->deltalist[0].timer->period().msec();
 		} else {
 			//no timers left so set tout to INFINITE to signal the
 			//blocking function to wait infinitely
-			tout = INFINITE;
+			fdm->tout = INFINITE;
 		}
 #else
-		if(deltalist.size()) {
+		if(fdm->deltalist.size()) {
 			//get the current timeout
-			*tout = deltalist[0].delta.toTimeval();//.timer->period().toTimeval();
+			*fdm->tout = 
+					fdm->deltalist[0].delta.toTimeval();//.timer->period().toTimeval();
 		} else {
 			//no timers left so get rid of the timeval structure
-			tout.reset();
+			fdm->tout.reset();
 		}
 #endif
 	}//end if(timeout)
 	
 #ifdef __windows__
 	//handle any HANDLEs that have activity
-	for(auto i=readfds.begin() + ret - WAIT_ABANDONED_0; i<readfds.end(); i++) {
-		for(auto j=readMap.begin(); j<readMap.end(); j++) {
+	for(auto i=fdm->readfds.begin() + ret - WAIT_ABANDONED_0; 
+	i<fdm->readfds.end(); i++) {
+		for(auto j=fdm->readMap.begin(); j<fdm->readMap.end(); j++) {
 			if(*i == j->fd) {
 				j->obj->readLoop();
 			}
@@ -147,28 +183,28 @@ bool OThread::execOnce() {
 
 #else
 	//handle the fds with pending errors
-	unsigned length = priorityMap.size();
+	unsigned length = fdm->priorityMap.size();
 	for(unsigned i=0; i<length; i++) {
 		//if the fd is set then call the runloop for the associated object
-		if(FD_ISSET(priorityMap[i].fd, &tmppriorityset)) {
-			priorityMap[i].obj->priorityLoop();
+		if(FD_ISSET(fdm->priorityMap[i].fd, &tmppriorityset)) {
+			fdm->priorityMap[i].obj->priorityLoop();
 		}
 	}
 	
 	//handle the fds ready to be read from
-	length = readMap.size();
+	length = fdm->readMap.size();
 	for(unsigned i=0; i<length; i++) {
 		//if the fd is set then call the runloop for the associated object
-		if(FD_ISSET(readMap[i].fd, &tmpreadset)) {
-			readMap[i].obj->readLoop();
+		if(FD_ISSET(fdm->readMap[i].fd, &tmpreadset)) {
+			fdm->readMap[i].obj->readLoop();
 		}
 	}
 	//handle the fds ready to be written to
-	length = writeMap.size();
+	length = fdm->writeMap.size();
 	for(unsigned i=0; i<length; i++) {
 		//if the fd is set then call the runloop for the associated object
-		if(FD_ISSET(writeMap[i].fd, &tmpwriteset)) {
-			writeMap[i].obj->writeLoop();
+		if(FD_ISSET(fdm->writeMap[i].fd, &tmpwriteset)) {
+			fdm->writeMap[i].obj->writeLoop();
 		}
 	}
 #endif
@@ -176,87 +212,99 @@ bool OThread::execOnce() {
 	return true;
 }
 
+void OThread::allocThreadFd() {
+	if(!fdm) fdm.reset(new OThreadFds);
+}
+
 void OThread::registerReadFD(OO::HANDLE fd, OIODevice* o) {
+	this->allocThreadFd();
+	
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
 	fdMap xfer(fd, o);
 	
 	//check to make sure the file descriptor is not already added
-	for(unsigned i=0; i<readMap.size(); i++) {
+	for(unsigned i=0; i<fdm->readMap.size(); i++) {
 		//the file descriptor matches, so just reset the object
 		//pointer and we are done here
-		if(readMap[i].fd == fd) {
-			readMap[i].obj = o;
+		if(fdm->readMap[i].fd == fd) {
+			fdm->readMap[i].obj = o;
 			return;
 		}
 	}
 	
-	readMap.push_back(xfer);
+	fdm->readMap.push_back(xfer);
 	
 #ifdef __windows__
-	readfds.push_back(fd);
+	fdm->readfds.push_back(fd);
 #else
-	FD_SET(fd, &readfds);
+	FD_SET(fd, &fdm->readfds);
 	
-	if(fd > fdmax) fdmax = fd;
+	if(fd > fdm->fdmax) fdm->fdmax = fd;
 #endif
 }
 
 void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
+	this->allocThreadFd();
+	
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
 	//check to make sure the file descriptor is not already added
-	for(unsigned i=0; i<writeMap.size(); i++) {
+	for(unsigned i=0; i<fdm->writeMap.size(); i++) {
 		//the file descriptor matches, so just reset the object
 		//pointer and we are done here
-		if(writeMap[i].fd == fd) {
-			writeMap[i].obj = o;
+		if(fdm->writeMap[i].fd == fd) {
+			fdm->writeMap[i].obj = o;
 			return;
 		}
 	}
 	
-	writeMap.push_back(fdMap(fd, o));
+	fdm->writeMap.push_back(fdMap(fd, o));
 	
 #ifdef __windows__
 
 #else
-	FD_SET(fd, &writefds);
+	FD_SET(fd, &fdm->writefds);
 #endif
 }
 
 void OThread::registerPriorityFD(OO::HANDLE fd, OIODevice* o) {
+	this->allocThreadFd();
+	
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
 	fdMap xfer(fd, o);
 	
 	//check to make sure the file descriptor is not already added
-	for(unsigned i=0; i<priorityMap.size(); i++) {
+	for(unsigned i=0; i<fdm->priorityMap.size(); i++) {
 		//the file descriptor matches, so just reset the object
 		//pointer and we are done here
-		if(priorityMap[i].fd == fd) {
-			priorityMap[i].obj = o;
+		if(fdm->priorityMap[i].fd == fd) {
+			fdm->priorityMap[i].obj = o;
 			return;
 		}
 	}
 	
-	priorityMap.push_back(xfer);
+	fdm->priorityMap.push_back(xfer);
 	
 #ifdef __windows__
 	
 #else
-	FD_SET(fd, &priorityfds);
+	FD_SET(fd, &fdm->priorityfds);
 #endif
 }
 
 void OThread::unregisterReadFD(OO::HANDLE fd) {
+	this->allocThreadFd();
+	
 	//find the fd in the map and remove it
-	unsigned length = readMap.size();
+	unsigned length = fdm->readMap.size();
 	for(unsigned i=0; i<length; i++) {
-		if(readMap[i].fd == fd) {
-			readMap.erase(readMap.begin() + i);
+		if(fdm->readMap[i].fd == fd) {
+			fdm->readMap.erase(fdm->readMap.begin() + i);
 			break;
 		}
 	}
@@ -265,16 +313,18 @@ void OThread::unregisterReadFD(OO::HANDLE fd) {
 #ifdef __windows__
 
 #else
-	FD_CLR(fd, &readfds);
+	FD_CLR(fd, &fdm->readfds);
 #endif
 }
 
 void OThread::unregisterWriteFD(OO::HANDLE fd) {
+	this->allocThreadFd();
+	
 	//find the fd in the write map and remove it
-	unsigned length = writeMap.size();
+	unsigned length = fdm->writeMap.size();
 	for(unsigned i=0; i<length; i++) {
-		if(writeMap[i].fd == fd) {
-			writeMap.removeAt(i);
+		if(fdm->writeMap[i].fd == fd) {
+			fdm->writeMap.removeAt(i);
 			break;
 		}
 	}
@@ -283,16 +333,18 @@ void OThread::unregisterWriteFD(OO::HANDLE fd) {
 #ifdef __windows__
 
 #else
-	FD_CLR(fd, &writefds);
+	FD_CLR(fd, &fdm->writefds);
 #endif
 }
 
 void OThread::unregisterPriorityFD(OO::HANDLE fd) {
+	this->allocThreadFd();
+	
 	//find the fd in the write map and remove it
-	unsigned length = priorityMap.size();
+	unsigned length = fdm->priorityMap.size();
 	for(unsigned i=0; i<length; i++) {
-		if(priorityMap[i].fd == fd) {
-			priorityMap.removeAt(i);
+		if(fdm->priorityMap[i].fd == fd) {
+			fdm->priorityMap.removeAt(i);
 			break;
 		}
 	}
@@ -301,43 +353,46 @@ void OThread::unregisterPriorityFD(OO::HANDLE fd) {
 #ifdef __windows__
 
 #else
-	FD_CLR(fd, &priorityfds);
+	FD_CLR(fd, &fdm->priorityfds);
 #endif
 }
 
 void OThread::registerTimer(OTimerBase* tim) {
+	this->allocThreadFd();
+	
 	//register this new timer in the delta list
-	deltalist.push_back(TimerDelta(tim));
+	fdm->deltalist.push_back(TimerDelta(tim));
 	
 	//sort the list according to the timeout period
-	sort(deltalist.begin(), deltalist.end(), 
+	sort(fdm->deltalist.begin(), fdm->deltalist.end(), 
 		 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
 		return a.delta < b.delta;
 	});
 	
 #ifdef __windows__
-	tout = deltalist[0].timer->period().msec();
+	fdm->tout = fdm->deltalist[0].timer->period().msec();
 #else
-	if(!tout.get()) tout.reset(new timeval);
+	if(!fdm->tout) fdm->tout.reset(new timeval);
 	
-	*tout = deltalist[0].timer->period().toTimeval();
+	*fdm->tout = fdm->deltalist[0].timer->period().toTimeval();
 #endif
 }
 
 void OThread::unregisterTimer(OTimerBase *tim) {
-	for(unsigned i=0; i<deltalist.size(); i++) {
-		if(deltalist[i].timer == tim) {
-			deltalist.removeAt(i);
+	this->allocThreadFd();
+	
+	for(unsigned i=0; i<fdm->deltalist.size(); i++) {
+		if(fdm->deltalist[i].timer == tim) {
+			fdm->deltalist.removeAt(i);
 			break;
 		}
 	}
 	
 #ifdef __windows__
-	if(deltalist.size() == 0) tout = INFINITE;
+	if(fdm->deltalist.size() == 0) fdm->tout = INFINITE;
 #else
-	if(deltalist.size() == 0) tout.reset();
+	if(fdm->deltalist.size() == 0) fdm->tout.reset();
 #endif
-	
 }
 
 void OThread::callback(function<void ()> cbk) {
@@ -372,10 +427,6 @@ int OThread::processors() {
 	}
 		return numCPU;
 #endif
-}
-
-bool OThread::isRunning() const {
-	return is_running;
 }
 
 #ifdef __windows__

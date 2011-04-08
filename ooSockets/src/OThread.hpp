@@ -31,6 +31,11 @@
 #include<algorithm>
 #include<memory>
 
+#include<boost/thread/mutex.hpp>
+#include<boost/interprocess/smart_ptr/unique_ptr.hpp>
+
+namespace bip = boost::interprocess;
+
 #include<OList.hpp>
 #include<OIODevice.hpp>
 #include<OTime.hpp>
@@ -50,6 +55,118 @@
 
 using namespace std;
 	
+/// This struct stores a map of the OIODevice objects and
+///	their associated file descriptors.
+struct fdMap {
+	fdMap() { fd = 0; obj = 0; }
+	fdMap(OO::HANDLE f, OIODevice* o) { fd = f; obj = o; }
+	~fdMap() { obj = 0; }
+	
+	OO::HANDLE fd;
+	OIODevice* obj;
+};
+
+struct TimerDelta {
+	TimerDelta(OTimerBase* b) {
+		delta = b->period();
+		timer = b;
+	}
+	
+	void reset() {
+		delta = timer->period();
+	}
+	
+	bool operator==(OTimerBase* other) {
+		return timer == other;
+	}
+	
+	OTime delta;
+	OTimerBase* timer;
+};
+
+struct OThreadFds {
+	OThreadFds() : tout(NULL) {
+		fdmax = 0;
+		readMap.clear();
+		writeMap.clear();
+		priorityMap.clear();
+		FD_ZERO(&readfds);
+		FD_ZERO(&writefds);
+		FD_ZERO(&priorityfds);
+		deltalist.clear();
+	}
+	
+	OThreadFds(const OThreadFds& other) : tout(NULL) {
+		fdmax = other.fdmax;
+		readMap = other.readMap;
+		writeMap = other.writeMap;
+		priorityMap = other.priorityMap;
+		readfds = other.readfds;
+		writefds = other.writefds;
+		priorityfds = other.priorityfds;
+		deltalist = other.deltalist;
+	}
+	
+	OThreadFds& operator=(const OThreadFds& other) {
+		fdmax = other.fdmax;
+		readMap = other.readMap;
+		writeMap = other.writeMap;
+		priorityMap = other.priorityMap;
+		readfds = other.readfds;
+		writefds = other.writefds;
+		priorityfds = other.priorityfds;
+		deltalist = other.deltalist;
+		tout.reset(NULL);
+		
+		return *this;
+	}
+	
+	int fdmax;
+	
+	///	Array of OIODevice map for reading.
+	OList<fdMap> readMap;
+	
+	/// Array of OIODevice map for writing.
+	OList<fdMap> writeMap;
+	
+	///	Array of OIODevice map for high priority data.
+	OList<fdMap> priorityMap;
+	
+	/// The fd_set is needed for the select function to check for errors.
+#ifdef __windows__
+	OList<HANDLE> priorityfds;
+#else
+	fd_set priorityfds;
+#endif
+	
+	///	The fd_set is needed for the select function.
+#ifdef __windows__
+	OList<HANDLE> readfds;
+#else
+	fd_set readfds;
+#endif
+	
+	/// The fd_set is needed for the select function for the 
+	/// write arguement.
+#ifdef __windows__
+	OList<HANDLE> writefds;
+#else
+	fd_set writefds;
+#endif
+	
+	/// Delta list to store the list of active timers.
+	OList<TimerDelta> deltalist;
+	
+	/// This is passed to the select call so it can return when
+	/// a timer times out.
+#ifdef __windows__
+	DWORD tout;
+#else
+	unique_ptr<timeval> tout;
+#endif
+	
+};
+
 /**	OThread is a simple wrapper around pOThread which adds some easy-to-use
  *	facilities for managing a large set of file descriptors. Preferably this
  *	class should be subclassed and all of the data managined inside that 
@@ -68,6 +185,8 @@ public:
 	*/
 	OThread();
 	
+	OThread(OThread& other);
+	
 	/**	Using this constructor is equavalent to calling the empty constructor
 	 *	and then calling callback() and start().
 	 *	\code
@@ -82,6 +201,14 @@ public:
 	 *	even if it is actively running.
 	*/
 	~OThread();
+	
+	static OThread self();
+	
+	bool isSelf() const;
+	
+	bool operator==(OThread& thr) const;
+	
+	void cancel();
 	
 	/// Start the execution of the callback function by this OThread.
 	void start();
@@ -146,51 +273,11 @@ public:
 	
 protected:
 	
-	/// This struct stores a map of the OIODevice objects and
-	///	their associated file descriptors.
-	struct fdMap {
-		fdMap() { fd = 0; obj = 0; }
-		fdMap(OO::HANDLE f, OIODevice* o) { fd = f; obj = o; }
-		~fdMap() { obj = 0; }
-		
-		OO::HANDLE fd;
-		OIODevice* obj;
-	};
+	void allocThreadFd();
 	
-	int fdmax;
+	unique_ptr<OThreadFds> fdm;
 	
-	bool is_running;
 	
-	///	Array of OIODevice map for reading.
-	OList<fdMap> readMap;
-	
-	///	Array of OIODevice map for high priority data.
-	OList<fdMap> priorityMap;
-	
-	/// The fd_set is needed for the select function to check for errors.
-#ifdef __windows__
-	OList<HANDLE> priorityfds;
-#else
-	fd_set priorityfds;
-#endif
-	
-	///	The fd_set is needed for the select function.
-#ifdef __windows__
-	OList<HANDLE> readfds;
-#else
-	fd_set readfds;
-#endif
-	
-	/// The fd_set is needed for the select function for the 
-	/// write arguement.
-#ifdef __windows__
-	OList<HANDLE> writefds;
-#else
-	fd_set writefds;
-#endif
-	
-	/// Array of OIODevice map for writing.
-	OList<fdMap> writeMap;
 	
 	///	The OThread for this OThread object.
 #ifdef __windows__
@@ -199,43 +286,14 @@ protected:
 	pthread_t thread;
 #endif
 	
-	struct TimerDelta {
-		TimerDelta(OTimerBase* b) {
-			delta = b->period();
-			timer = b;
-		}
-		
-		void reset() {
-			delta = timer->period();
-		}
-		
-		bool operator==(OTimerBase* other) {
-			return timer == other;
-		}
-		
-		OTime delta;
-		OTimerBase* timer;
-	};
-	/// Delta list to store the list of active timers.
-	OList<TimerDelta> deltalist;
-	
-	/// This is passed to the select call so it can return when
-	/// a timer times out.
-#ifdef __windows__
-	DWORD tout;
-#else
-	unique_ptr<timeval> tout;
-#endif
 	
 	function<void ()> runCbk;
 	void sigRun() {
-		is_running = true;
 		if(runCbk) {
 			runCbk();
 		} else {
 			exec();
 		}
-		is_running = false;
 	}
 	
 	///	This is where the processing actually starts.
