@@ -45,8 +45,8 @@ public:
 	
 	void operator=(const OPipe& other);
 	
-	void write(OByteArray& data, int len);
-	void write(OByteArray& data);
+	int write(OByteArray& data, int len);
+	int write(OByteArray& data);
 	
 	OByteArray readAll();
 	OByteArray read(int len);

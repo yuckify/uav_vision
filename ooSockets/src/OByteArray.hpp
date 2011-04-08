@@ -157,7 +157,7 @@ public:
 	 *	reallocation penalty. If large amounts of data are prepended
 	 *	the binary data container will expand to accommodate.
 	*/
-	explicit OByteArray(int n = 30, OO::Endian end = OO::LittleEndian);
+	explicit OByteArray(OO::Endian end = OO::LittleEndian);
 	
 	/**	The copy constructor.
 	 *	@param old The OByteArray obect being copied.
@@ -549,7 +549,7 @@ public:
 	 *		is negative all the remaining data will be read.
 	 *	@return The amount of data actually read.
 	*/
-	int read(char* ptr, int len);
+	int read(void* ptr, int len);
 	
 	/**	Sum all the bytes of the data. This is useful if this data
 	  *	is to be send over a serial port.
@@ -642,13 +642,8 @@ protected:
 	 *	current amount of data in the array, the amount of 
 	 *	recorded data will be increased to reflect the write.
 	*/
-	void advanceSize(int addition);
+//	void advanceSize(int addition);
 	
-<<<<<<< HEAD
-=======
-//	void advanceSizePrepend(int addition);
-	
->>>>>>> 8899a7488ad38af27a9d41b557f11b1965cd38ae
 #if defined(__LITTLE_ENDIAN__)	|| \
 	defined(i686)				|| \
 	defined(__i686)				|| \
@@ -743,27 +738,11 @@ protected:
 	
 	
 	struct OByteArrayMem {
-<<<<<<< HEAD
-		OByteArrayMem(int len) {
-			bytearray.reset(new char[len]);
-			sizeofdata = 0;
-			sizeofarray = len;
-			end = OO::LittleEndian;
-		}
-		
-		//the amount of data being stored
-		int sizeofdata;
-		//the size of the memory being pointed to
-		int sizeofarray;
-		//a pointer to the data
-		boost::scoped_array<char> bytearray;
-=======
-		OByteArrayMem(int len, int p = 20) : bytes(len) {
+		OByteArrayMem() {
 			end = OO::LittleEndian;
 		}
 		
 		vector<unsigned char> bytes;
->>>>>>> 8899a7488ad38af27a9d41b557f11b1965cd38ae
 		
 		OO::Endian end;
 		OO::ArrayBase dir;
@@ -774,12 +753,6 @@ protected:
 	shared_ptr<OByteArrayMem> mem;
 	
 	void makeOwner();
-	
-<<<<<<< HEAD
-	void checkResize(int addition);
-	
-=======
->>>>>>> 8899a7488ad38af27a9d41b557f11b1965cd38ae
 };
 
 typedef OList<OByteArray> OByteList;

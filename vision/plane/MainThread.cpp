@@ -143,7 +143,7 @@ void MainThread::writeImageDb() {
 	if(gc.connected()) {
 		OByteArray pack;
 		pack<<db;
-		gc.write(ImageDetails, db);
+//		gc.write(ImageDetails, db);
 	}
 }
 
@@ -283,7 +283,7 @@ void MainThread::camControlRead() {
 				if(gc.connected() && state) {
 					OByteArray pack;
 					pack<<state;
-					gc.write(CameraStatus, pack);
+//					gc.write(CameraStatus, pack);
 				}
 			}
 		}

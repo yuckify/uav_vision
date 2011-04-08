@@ -24,6 +24,11 @@ void VideoThread::run() {
 	p[2] = 0;
 	
 	while(1) {
+		if(!stream->connected()) {
+			usleep(100000);
+			continue;
+		}
+		
 		//Grab Frames
 		frame = cvQueryFrame(capture);
 		

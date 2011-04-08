@@ -199,6 +199,11 @@ CVOperator::CVOperator(QWidget *parent) :
 	
 	//setup the callbacks for the ground connection
 	gc.setRecvHandler(VideoFrame, [&disp](OByteArray ba)->void{
+		static int c = 0;
+		c++;
+		if(c>10) ::exit(0);
+		
+		
 		CvMat* compFrame = NULL;
 		
 		ba>>compFrame;

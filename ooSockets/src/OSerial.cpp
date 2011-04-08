@@ -268,12 +268,14 @@ OByteArray OSerial::read(int len) {
 	DWORD readlen = 0;
 	ReadFile(fdes, ba.data(), len, &readlen, NULL);
 #else
-	int readlen = ::read(fdes, ba.data(), len);
+	int recvlen = ::read(fdes, ba.data(), len);
 #endif
-	if(readlen > 0) {
-		ba.advanceSize(readlen);
-	} else if(readlen < 0) {
-		sigError();
+	
+	if(recvlen <= 0) {
+		ba.resize(ba.size() - len);
+		if(recvlen < 0) sigError();
+	} else {
+		ba.resize(ba.size() - (len - recvlen));
 	}
 	
 	return ba;

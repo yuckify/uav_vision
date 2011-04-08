@@ -133,7 +133,7 @@ OByteArray& operator<<(OByteArray& data, CvMat*& mat) {
 	
 	//serialize the data, this data is unaligned so no
 	//iteration is necessary
-	data.write((const char*)mat->data.ptr, mat->step * mat->rows);
+	data.write(mat->data.ptr, mat->step * mat->rows);
 	
 	return data;
 }

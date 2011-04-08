@@ -45,32 +45,28 @@ void OPipe::operator=(const OPipe& other) {
 	fdes[1] = other.fdes[1];
 }
 
-void OPipe::write(OByteArray &data, int len) {
+int OPipe::write(OByteArray &data, int len) {
 #ifdef __windows__
 	DWORD written = 0;
-	if(!WriteFile(fdes[1], data.data(), len, &written, NULL)) {
+	if(!WriteFile(fdes[1], data.tellData(), len, &written, NULL)) {
 		if(written <= 0) {
 			sigError();
 		}
 	}
 #else
-	if(::write(fdes[1], data.data(), len) < 0) {
+	int written = 0;
+	if((written = ::write(fdes[1], data.data(), len)) < 0) {
 		sigError();
 	}
 #endif
+	
+	data.seek(written, OO::cur);
+	
+	return written;
 }
 
-void OPipe::write(OByteArray &data) {
-#ifdef __windows__
-	DWORD written = 0;
-	if(!WriteFile(fdes[1], data.data(), data.size(), &written, NULL)) {
-		if(written <= 0) {
-			sigError();
-		}
-	}
-#else
-	write(data, data.size());
-#endif
+int OPipe::write(OByteArray &data) {
+	return write(data, data.dataLeft());
 }
 
 OByteArray OPipe::read(int len) {
@@ -78,15 +74,16 @@ OByteArray OPipe::read(int len) {
 	data.resize(len);
 
 #ifdef __windows__
-	DWORD read = 0;
-	if(!ReadFile(fdes[0], data.data(), len, &read, NULL)) {
+	DWORD recvlen = 0;
+	if(!ReadFile(fdes[0], data.data(), len, &recvlen, NULL)) {
 		return data;
 	}
-	data.advanceSize(read);
+	data.resize(data.size() - (len - recvlen));
+	
 #else
-	int ret;
-	if((ret = ::read(fdes[0], data.data(), len)) > 0) {
-		data.advanceSize(len);
+	int recvlen;
+	if((recvlen = ::read(fdes[0], data.data(), len)) > 0) {
+		data.resize(data.size() - (len - recvlen));
 		return data;
 	} else {
 		sigError();

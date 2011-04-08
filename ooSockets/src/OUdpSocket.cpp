@@ -350,8 +350,10 @@ OByteArray OUdpSocket::read(OSockAddress& addr, int len) {
 	int recvlen = recvfrom(fdes, ba.tellData(), len, 0, 
 						   addr.data(), &socklen);
 	
-	if(recvlen > 0) {
-		ba.advanceSize(recvlen);
+	if(recvlen <= 0) {
+		ba.resize(ba.size() - len);
+	} else {
+		ba.resize(ba.size() - (len - recvlen));
 	}
 	return ba;
 }

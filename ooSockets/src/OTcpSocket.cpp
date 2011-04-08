@@ -28,12 +28,13 @@ bool OTcpSocket::connect(const OAddressInfo& info) {
 int OTcpSocket::read(OByteArray& data, int len) {
 	if(len <= 0) return 0;
 	
-	data.resize(len);
+	data.resize(data.size() + len);
 	int recvlen = recv(fdes, data.tellData(), len, 0);
-	if(recvlen != -1) {
-		data.advanceSize(recvlen);
+	if(recvlen >= 0) {
+		data.resize(data.size() - len + recvlen);
 		data.seek(recvlen, OO::cur);
 	} else {
+		data.resize(data.size() - len);
 		//an error occured so report it
 		sigError();
 	}
@@ -54,11 +55,13 @@ OByteArray OTcpSocket::read(int len) {
 	
 	//make sure the container can fit all the data
 	//we are about to read
-	ba.resize(len);
+	ba.resize(ba.size() + len);
 	int recvlen = recv(fdes, ba.data(), len, 0);
-	if(recvlen != -1) {
-		ba.advanceSize(recvlen);
+//	cout<<"recv: " <<recvlen <<endl;
+	if(recvlen >= 0) {
+		ba.resize(ba.size() - len + recvlen);
 	} else {
+		ba.resize(ba.size() - len);
 		//an error occured so report it
 		sigError();
 	}
@@ -71,6 +74,10 @@ OByteArray OTcpSocket::readAll() {
 }
 
 int OTcpSocket::write(OByteArray &data) {
+//	cout<<"writing" <<endl;
+//	for(int i=0; i<20; i++) {
+//		cout<<(int)data.tellData()[i] <<" ";
+//	} cout<<endl;
 	return write(data, data.dataLeft());
 }
 

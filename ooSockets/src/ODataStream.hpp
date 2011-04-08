@@ -437,10 +437,10 @@ public:
 			//if the thread writing the data is not the one that created
 			//this ODataStream then pipe some data over to the one that did make
 			//this ODatastream
-			if(q_mem->q_creator != pthread_self()) {
+//			if(q_mem->q_creator != pthread_self()) {
 				OByteArray d("d", 1);
 				q_mem->q_activity.write(d);
-			}
+//			}
 		}
 	}
 	
@@ -475,6 +475,7 @@ public:
 	
 protected:
 	void readyRead() {
+//		cout<<"read" <<endl;
 		do {
 			//first check if we need to read in the header for the next packet
 			if(q_mem->q_readhead) {
@@ -486,8 +487,10 @@ protected:
 												   sizeof(PacketType) +
 												   sizeof(uint8_t);
 					
-					q_mem->q_sock.read(q_mem->q_head, header_size -
-													q_mem->q_head.size());
+					if(q_mem->q_sock.read(q_mem->q_head, header_size -
+										  q_mem->q_head.size()) < 0) {
+						return;
+					}
 					
 					//check if we need to read in more header information
 					q_mem->q_readhead = q_mem->q_head.size() != header_size;
@@ -495,15 +498,26 @@ protected:
 					static const int header_size = sizeof(PacketLength) +
 												   sizeof(PacketType);
 					
-					q_mem->q_sock.read(q_mem->q_head, header_size - 
-													q_mem->q_head.size());
+					if(q_mem->q_sock.read(q_mem->q_head, header_size - 
+										  q_mem->q_head.size()) < 0) {
+						return;
+					}
 					
 					//check if we need to read in more header information
 					q_mem->q_readhead = q_mem->q_head.size() != header_size;
 				}
 				
+//				cout<<"read:"  <<q_mem->q_head.size() <<endl;
+				
+//				for(int i=0; i<q_mem->q_head.size(); i++) {
+//					cout<<(int)q_mem->q_head.data()[i] <<" ";
+//				} cout<<endl;
+				
+//				cout<<"avail: " <<q_mem->q_sock.available() <<endl;
+				
 				//we have not finished reading in the head, so return and wait
 				//for more data
+//				cout<<"readhead: " <<q_mem->q_readhead <<endl;
 				if(q_mem->q_readhead) return;
 				
 				//deserialize the header information
@@ -518,6 +532,9 @@ protected:
 				//read the packet type
 				q_mem->q_head>>(q_mem->q_type);
 				
+//				cout<<"l: " <<q_mem->q_length <<" c: " <<(int)q_mem->q_config 
+//						<<" t: " <<(int)q_mem->q_type <<endl;
+				
 				//we are done with the header buffer so clear it
 				q_mem->q_head.clear();
 			}
@@ -528,15 +545,26 @@ protected:
 				q_mem->q_recvBuff.back().setEndian(useEndian);
 			}
 			
+//			cout<<"t: " <<(int)q_mem->q_type <<" l: " <<q_mem->q_length <<endl;
+			
 			//get the curret buffer we are working with
 			OByteArray& data = q_mem->q_recvBuff[q_mem->q_type];
 			
 			//read in some data, make sure the new data gets appended
 			//to the block of old data
-			q_mem->q_sock.read(data, q_mem->q_length - data.size() - 
+//			cout<<"read payload" <<endl;
+//			cout<<"ba: " <<q_mem->q_sock.available() <<endl;
+//			cout<<"reading: " <<q_mem->q_length - data.size() - 
+//					sizeof(PacketType) -
+//					sizeof(uint8_t) <<endl;
+//			cout<<"td: " <<data.tell() <<endl;
+			if(q_mem->q_sock.read(data, q_mem->q_length - data.size() - 
 							   sizeof(PacketType) -
-							   sizeof(uint8_t));
-			
+							   sizeof(uint8_t)) < 0) {
+				return;
+			}
+//			cout<<"aa: " <<q_mem->q_sock.available() <<endl;
+//			::exit(0);
 			if(data.size() >= (q_mem->q_length-sizeof(PacketType)-sizeof(uint8_t))) {
 				//read out the packet type
 				data.seek(0);
@@ -544,6 +572,11 @@ protected:
 				if(!(q_mem->q_config & EndPacket)) {
 					return;
 				}
+				
+//				cout<<"ds: " <<data.size() <<endl;
+//				for(int i=0; i<15; i++) {
+//					cout<<(int)data.data()[i] <<" ";
+//				} cout<<endl;
 				
 				//if a function is set for this packet signature, call it
 				if(q_mem->q_handlers.size() > q_mem->q_type) {
@@ -579,26 +612,41 @@ protected:
 			PacketLength length = 0;
 			uint8_t config = EndPacket;
 			PacketType type = i->q_mem->q_que.front().q_type;
-			head<<length <<config <<type;
+			head<<length ;//cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
+			head<<config;//cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
+			head<<type;//cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
 			
 			head.seek(0);
 			length = data.size() + head.size() - sizeof(PacketLength);
 			head<<length;
 			
+//			for(int i=0; i<head.size(); i++) {
+//				cout<<(int)head.data()[i] <<" ";
+//			} cout<<endl;
+			
+//			cout<<"l: " <<length <<" c: " <<(int)config <<" t: " <<(int)type <<endl;
+//			cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
+			
 			//assume the whole header will be written...
 			head.seek(0);
-			if(q_mem->q_sock.write(head) < 0) {
+			int hlen = 0;
+			if((hlen = q_mem->q_sock.write(head)) < 0) {
+				cout<<"could not write" <<endl;
 				//the connection was closed so just unlock the mutex and return
 				i->unlock();
 				return;
 			}
+//			cout<<"hlen: " <<hlen <<endl;
 			
 			//write the payload
-			if(q_mem->q_sock.write(data) < 0) {
+			int plen = 0;
+			if((plen = q_mem->q_sock.write(data)) < 0) {
+				cout<<"could not write" <<endl;
 				//the connection was closed so just unlock the mutex and return
 				i->unlock();
 				return;
 			}
+//			cout<<"plen: " <<plen <<endl;
 			
 			//check if we wrote all of the payload or just most of it
 			if(!data.dataLeft()) {
@@ -719,7 +767,7 @@ protected:
 	
 	void pipeRead() {
 		q_mem->q_sock.enableReadyWrite();
-		OByteArray data = q_mem->q_activity.readAll();
+		q_mem->q_activity.readAll();
 	}
 	
 	void sockDisconnected() {
