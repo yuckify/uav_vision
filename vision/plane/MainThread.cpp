@@ -25,7 +25,7 @@ MainThread::MainThread() :
 	OPortList ports = OSerial::portList().filterByType(OO::UsbPort);
 	if(ports.size() == 0) {
 		cerr<<"*****No available serial ports.*****" <<endl;
-		::exit(0);
+//		::exit(0);
 	}
 	cout<<"name: " <<ports[0].hwName() <<endl;
 	initserial.readyReadFunc(bind(&MainThread::initSerialRead, this));
