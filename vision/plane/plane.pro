@@ -99,3 +99,6 @@ HEADERS += MainThread.h \
     ../../ooSockets/src/OCompatibility.hpp \
     ../../ooSockets/src/ODSMux.h \
     ../../ooSockets/src/ODataStream.hpp
+
+OTHER_FILES += \
+    ../plane-build-desktop/Makefile
