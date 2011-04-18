@@ -36,7 +36,7 @@ class OIODevice : public QObject {
 #endif
 public:
 	
-	virtual OO::HANDLE fileDescriptor() const = 0;
+	virtual OO::HANDLE handle() const = 0;
 
 	virtual int available() = 0;
 	

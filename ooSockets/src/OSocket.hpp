@@ -146,13 +146,13 @@ public:
 	void close();
 	
 	/// Read in 'len' bytes of data and place it in 'ba'.
-	virtual OByteArray read(int len) = 0;
+//	virtual OByteArray read(int len) = 0;
 	
 	/// Read in all the data from the socket and place it in 'data'.
-	virtual OByteArray readAll() = 0;
+//	virtual OByteArray readAll() = 0;
 	
 	/// Write the entire contents of 'data' to the socket.
-	virtual int write(OByteArray& data) = 0;
+//	virtual int write(OByteArray& data) = 0;
 	
 	/// Check if the ready write signal has been enabled.
 	bool readyWriteEnabled() const;
@@ -244,10 +244,12 @@ public:
 	int bytesAvailable();
 	
 	/// Get the BSD file descriptor for this socket.
-	OO::HANDLE fileDescriptor() const;
+	OO::HANDLE handle() const;
 	
 	///	Set the BSD file descriptor for this socket.
-	void setFileDescriptor(OO::HANDLE des);
+	void setHandle(OO::HANDLE des);
+	
+	void operator=(OO::HANDLE h);
 	
 	/// Get the parent thread for this socket.
 	OThread* parent();
@@ -327,7 +329,6 @@ protected:
 				OO::SockFamily	family	= OO::NullFamily);
 	
 	
-	unsigned conn;
 	unsigned writestat;
 	unsigned esigstat;
 	
@@ -411,14 +412,12 @@ protected:
 	///	Callback, called when the connection is opened.
 	function<void ()> connectCbk;
 	void sigConnect() {
-		conn = true;
 		if(connectCbk) connectCbk();
 	}
 	
 	///	Callback, called when the connection is closed.
 	function<void ()> disconnectCbk;
 	void sigDisconnect() {
-		conn = false;
 		close();
 		if(disconnectCbk) disconnectCbk();
 	}

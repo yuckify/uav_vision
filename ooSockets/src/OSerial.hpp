@@ -191,7 +191,7 @@ public:
 	
 	
 protected:
-	OO::HANDLE fileDescriptor() const;
+	OO::HANDLE handle() const;
 	
 	/**	This should be called when it has already been determined
 	  *	that there is an error on the file desciptor that needs

@@ -25,14 +25,14 @@ using namespace std;
 
 class VideoThread : public OThread {
 public:
-	VideoThread(ODataStreamBase* strm, PlaneInfo& inf);
+	VideoThread(ODataStream<>* strm, PlaneInfo& inf);
 	
 	void run();
 	
 	void setCompression(OString comp);
 	
 private:
-	ODataStreamBase* stream;
+	ODataStream<>* stream;
 	PlaneInfo& info;
 	//compression extension
 	bst::mutex comptex;

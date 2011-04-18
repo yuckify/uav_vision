@@ -183,28 +183,28 @@ bool OThread::execOnce() {
 
 #else
 	//handle the fds with pending errors
-	unsigned length = fdm->errorfds.size()+1;
+	unsigned length = fdm->errorfds.size();
 	for(OO::HANDLE i=fdm->fdmin; unsigned(i)<length; i++) {
 		//if the fd is set then call the runloop for the associated object
 		if(FD_ISSET(i, &tmperrorset)) {
-			fdm->errorfds[i]->priorityLoop();
+			if(fdm->errorfds[i]) fdm->errorfds[i]->priorityLoop();
 		}
 	}
 	
 	//handle the fds ready to be read from
-	length = fdm->readfds.size()+1;
+	length = fdm->readfds.size();
 	for(OO::HANDLE i=fdm->fdmin; unsigned(i)<length; i++) {
 		//if the fd is set then call the runloop for the associated object
 		if(FD_ISSET(i, &tmpreadset)) {
-			fdm->readfds[i]->readLoop();
+			if(fdm->readfds[i]) fdm->readfds[i]->readLoop();
 		}
 	}
 	//handle the fds ready to be written to
-	length = fdm->writefds.size()+1;
+	length = fdm->writefds.size();
 	for(OO::HANDLE i=fdm->fdmin; unsigned(i)<length; i++) {
 		//if the fd is set then call the runloop for the associated object
 		if(FD_ISSET(i, &tmpwriteset)) {
-			fdm->writefds[i]->writeLoop();
+			if(fdm->writefds[i]) fdm->writefds[i]->writeLoop();
 		}
 	}
 	
@@ -232,6 +232,11 @@ void OThread::recalcMinMax(OO::HANDLE fd) {
 }
 
 void OThread::registerReadFD(OO::HANDLE fd, OIODevice* o) {
+#ifndef NDEBUG
+	cout<<"void OThread::registerReadFD(OO::HANDLE fd = \"" <<fd
+			<<"\", OIODevice* o = \"" <<o <<"\" )" <<endl;
+#endif
+	
 	this->allocThreadFd();
 	
 	//first make sure we are working with a valid file descriptor
@@ -248,6 +253,11 @@ void OThread::registerReadFD(OO::HANDLE fd, OIODevice* o) {
 }
 
 void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
+#ifndef NDEBUG
+	cout<<"void OThread::registerWriteFD(OO::HANDLE fd = \"" <<fd
+			<<"\", OIODevice* o = \"" <<o <<"\" )" <<endl;
+#endif
+	
 	this->allocThreadFd();
 	
 	//first make sure we are working with a valid file descriptor
@@ -264,6 +274,11 @@ void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
 }
 
 void OThread::registerErrorFD(OO::HANDLE fd, OIODevice* o) {
+#ifndef NDEBUG
+	cout<<"void OThread::registerErrorFD(OO::HANDLE fd = \"" <<fd
+			<<"\", OIODevice* o = \"" <<o <<"\" )" <<endl;
+#endif
+	
 	this->allocThreadFd();
 	
 	//first make sure we are working with a valid file descriptor
@@ -280,6 +295,11 @@ void OThread::registerErrorFD(OO::HANDLE fd, OIODevice* o) {
 }
 
 void OThread::unregisterReadFD(OO::HANDLE fd) {
+#ifndef NDEBUG
+	cout<<"void OThread::unregisterReadFD(OO::HANDLE fd = \"" <<fd
+			<<"\" )" <<endl;
+#endif
+	
 	this->allocThreadFd();
 	
 	//reset the maxfs or minfd values if they have changed
@@ -290,6 +310,11 @@ void OThread::unregisterReadFD(OO::HANDLE fd) {
 }
 
 void OThread::unregisterWriteFD(OO::HANDLE fd) {
+#ifndef NDEBUG
+	cout<<"void OThread::unregisterWriteFD(OO::HANDLE fd = \"" <<fd 
+			<<"\" )" <<endl;
+#endif
+	
 	this->allocThreadFd();
 	
 	//reset the maxfs or minfd values if they have changed
@@ -300,6 +325,11 @@ void OThread::unregisterWriteFD(OO::HANDLE fd) {
 }
 
 void OThread::unregisterErrorFD(OO::HANDLE fd) {
+#ifndef NDEBUG
+	cout<<"void OThread::unregisterErrorFD(OO::HANDLE fd = \"" <<fd
+			<<"\" )" <<endl;
+#endif
+	
 	this->allocThreadFd();
 	
 	//reset the maxfs or minfd values if they have changed

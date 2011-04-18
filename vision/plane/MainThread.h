@@ -75,7 +75,7 @@ private:
 //	OTcpSocket* ground;
 	void groundDisconnected();
 	
-	ODataStream<uint32_t, uint8_t, OO::LittleEndian, true> gc;
+	ODataStream<> gc;
 	
 	
 	//this structure and these functions are for packet switching

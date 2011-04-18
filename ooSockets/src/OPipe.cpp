@@ -159,7 +159,7 @@ void OPipe::priorityLoop() {
 	
 }
 
-OO::HANDLE OPipe::fileDescriptor() const {
+OO::HANDLE OPipe::handle() const {
     return readFd();
 }
 

@@ -58,6 +58,8 @@
 	#include<termios.h>
 #endif
 
+#define NDEBUG
+
 //include all components if OO_ALL is defined
 #ifdef OO_ALL
 

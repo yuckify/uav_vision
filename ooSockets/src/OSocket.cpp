@@ -20,7 +20,6 @@ OSocket::OSocket(OThread *parent) : qt_read(NULL), qt_write(NULL) {
 	qtpar = 0;
 	par = parent;
 	sockerr = 0;
-	conn = false;
 	fdes = 0;
 	esigstat = true;
 	writestat = false;
@@ -44,7 +43,6 @@ OSocket::OSocket(QObject *parent) : qt_read(NULL), qt_write(NULL) {
 	qtpar = parent;
 	par = 0;
 	sockerr = 0;
-	conn = false;
 	fdes = 0;
 	esigstat = true;
 	writestat = false;
@@ -68,10 +66,9 @@ void OSocket::close() {
 	if(fdes) {
 		shutdown(fdes, SHUT_RDWR);
 		_close(fdes);
-//		unregisterFD();
+		unregisterFD();
 		disableReadyWrite();
 		fdes = 0;
-		conn = false;
 		_clearError();
 	}
 }
@@ -454,17 +451,19 @@ OSockAddress OSocket::peerAddress() {
 	return recvaddr;
 }
 
-void OSocket::setFileDescriptor(OO::HANDLE des) {
+void OSocket::setHandle(OO::HANDLE des) {
 	//unregister the file descriptor with the parent thread
 	//before we change it
 	unregisterFD();
 	
 	fdes = (OO::SOCKET)des;
 	
-	if(des > 0) conn = true;
-	
 	//register the new file descriptor with the parent thread
 	registerFD();
+}
+
+void OSocket::operator =(OO::HANDLE h) {
+	setHandle(h);
 }
 
 OString OSocket::hostName() {
@@ -552,6 +551,10 @@ void OSocket::readLoop() {
 }
 
 void OSocket::writeLoop() {
+#ifndef NDEBUG
+	cout<<"void OSocket::writeLoop()" <<endl;
+#endif
+	
 	//set the value of written to false so we can check it
 	//after emitting the ready write signal, if written
 	//is still false then no calls to write() were made
@@ -567,6 +570,7 @@ void OSocket::writeLoop() {
 
 void OSocket::incommingLoop() {
 	int fd = accept(fdes, 0, 0);
+	
 	if(fd != -1 && fd != 0)
 		sigIncomming(fd);
 }
@@ -732,7 +736,7 @@ int OSocket::bytesAvailable() {
     return available();
 }
 
-OO::HANDLE OSocket::fileDescriptor() const {
+OO::HANDLE OSocket::handle() const {
 	return (OO::HANDLE)fdes;
 }
 

@@ -397,7 +397,7 @@ OSerial& OSerial::operator =(OSerial& other) {
 	return *this;
 }
 
-OO::HANDLE OSerial::fileDescriptor() const {
+OO::HANDLE OSerial::handle() const {
 	return fdes;
 }
 

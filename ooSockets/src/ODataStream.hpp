@@ -20,14 +20,6 @@ namespace bst = boost;
 
 using namespace std;
 
-class ODataStreamBase {
-public:
-	
-	virtual void write(uint16_t type, OByteArray data) = 0;
-	virtual bool connected() = 0;
-	
-};
-
 //config byte
 //lsb
 //<control packet>
@@ -41,11 +33,11 @@ public:
 //
 //
 template<class PacketLength = uint32_t, 
-		 class PacketType = uint16_t,
+		 class PacketType = uint8_t,
 		 OO::Endian useEndian = OO::LittleEndian,
-		 bool enableConfig = false,
+		 bool enableConfig = true,
 		 bool enableSecurity = false>
-							   class ODataStream : public ODataStreamBase {
+							   class ODataStream {
 	friend class ODSMux;
 protected:
 	enum ConfigBit {
@@ -73,13 +65,13 @@ protected:
 	struct Packet {
 		Packet() {}
 
-		Packet(uint16_t t, OByteArray d) {
+		Packet(PacketType t, OByteArray d) {
 			q_data = d;
 			q_type = t;
 		}
 
 		OByteArray	q_data;
-		uint16_t	q_type;
+		PacketType	q_type;
 	};
 	
 	class ODSOutQueue {
@@ -131,7 +123,7 @@ protected:
 			return q_mem->q_que.size();
 		}
 		
-		inline void write(uint16_t type, OByteArray data) {
+		inline void write(PacketType type, OByteArray data) {
 			q_mem->q_que.push_back(Packet(type, data));
 		}
 	};
@@ -247,7 +239,6 @@ public:
 		
 		//make sure the memory buffers know what endian we are using
 		q_mem->q_head.setEndian(useEndian);
-//		q_mem->q_data.setEndian(useEndian);
 	}
 	
 #ifdef OO_QT
@@ -298,7 +289,6 @@ public:
 		
 		//make sure the memory buffers know what endian we are using
 		q_mem->q_head.setEndian(useEndian);
-//		q_mem->q_data.setEndian(useEndian);
 	}
 #endif
 	
@@ -314,12 +304,8 @@ public:
 		return q_mem->q_end;
 	}
 	
-	OO::HANDLE fileDescriptor() const {
-			return q_mem->q_sock.fileDescriptor();
-	}
-	
-	void setFileDescriptor(OO::HANDLE fd) {
-		q_mem->q_sock.setFileDescriptor(fd);
+	OTcpSocket& socket() {
+		return q_mem->q_sock;
 	}
 	
 	OThread* parent() const {
@@ -342,11 +328,7 @@ public:
 	}
 #endif
 	
-	bool connected() {
-		return q_mem->q_sock.connected();
-	}
-	
-	void setHandler(uint16_t packetId, uint16_t priority, 
+	void setHandler(PacketType packetId, uint16_t priority, 
 					function<void (OByteArray)> cbk) {
 		setRecvHandler(packetId, cbk);
 		setSendHandler(packetId, priority);
@@ -357,7 +339,7 @@ public:
 	 *	@param packetId The unique ifdentifier of the block of data.
 	 *	@param priority The transmission priority of this block of data.
 	*/
-	void setSendHandler(uint16_t packetId, uint16_t priority = 0) {
+	void setSendHandler(PacketType packetId, uint16_t priority = 0) {
 		while(q_mem->q_ique.size() <= packetId) 
 			q_mem->q_ique.push_back(ODSOutQueue());
 		
@@ -376,7 +358,7 @@ public:
 	 *	@param packetId This is the unique identifier.
 	 *	@param cbk The function to be bound to the unique identifier.
 	*/
-	void setRecvHandler(uint16_t packetId, function<void (OByteArray)> cbk) {
+	void setRecvHandler(PacketType packetId, function<void (OByteArray)> cbk) {
 		while(q_mem->q_handlers.size() <= packetId) 
 			q_mem->q_handlers.push_back(NULL);
 		
@@ -397,7 +379,7 @@ public:
 	 *	@return The numeric value for the priority of the packet. Larger number
 	 *	specifies higher priority.
 	*/
-	uint16_t priority(uint16_t packetId) {
+	uint16_t priority(PacketType packetId) {
 		if(q_mem->q_ique.size() > packetId)
 			return q_mem->q_ique[packetId].priority();
 		return 0;
@@ -414,7 +396,7 @@ public:
 	/**	
 	 *	
 	*/
-	bool recvHandlerIsSet(uint16_t packetId) {
+	bool recvHandlerIsSet(PacketType packetId) {
 		return q_mem->q_handlers[packetId] != NULL;
 	}
 	
@@ -423,7 +405,7 @@ public:
 	 *	other endpoint to determine how to handle this packet.
 	 *	@param data The data that is being transmitted.
 	*/
-	void write(uint16_t packetId, OByteArray data) {
+	void write(PacketType packetId, OByteArray data) {
 		data.seek(0);
 		
 		if(q_mem->q_ique.size() <= packetId) return;
@@ -594,11 +576,13 @@ protected:
 	}
 	
 	void writeInit() {
+//		cout<<"void ODataStream::writeInit()" <<endl;
 		q_mem->q_writeState = WriteHigh;
 		writeHigh();
 	}
 	
 	void writeHigh() {
+//		cout<<"void ODataStream::writeHigh()" <<endl;
 		auto i=q_mem->q_pque.rbegin();
 		//we have found the first queue, check if it contains any chunks of
 		//data to write
@@ -771,6 +755,9 @@ protected:
 	}
 	
 	void sockDisconnected() {
+		//reset the writing state
+		q_mem->q_writeState = WriteInit;
+		
 		//clear all the buffers
 		q_mem->q_readhead = true;
 		q_mem->q_head.clear();

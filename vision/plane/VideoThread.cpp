@@ -1,6 +1,6 @@
 #include"VideoThread.h"
 
-VideoThread::VideoThread(ODataStreamBase* strm, PlaneInfo& inf) :
+VideoThread::VideoThread(ODataStream<>* strm, PlaneInfo& inf) :
 		info(inf) {
 	stream = strm;
 	
@@ -24,7 +24,7 @@ void VideoThread::run() {
 	p[2] = 0;
 	
 	while(1) {
-		if(!stream->connected()) {
+		if(!stream->socket().connected()) {
 			usleep(100000);
 			continue;
 		}
@@ -57,7 +57,7 @@ void VideoThread::run() {
 		comptex.unlock();
 		
 		//write the frame to the data stream
-		if(stream->connected()) {
+		if(stream->socket().connected()) {
 			OByteArray data;
 			data<<temp;
 			stream->write(VideoFrame, data);

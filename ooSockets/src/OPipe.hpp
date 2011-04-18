@@ -64,7 +64,7 @@ protected:
 	void errorLoop();
 	void priorityLoop();
 	
-	OO::HANDLE fileDescriptor() const;
+	OO::HANDLE handle() const;
 	
 	OO::HANDLE readFd() const;
 	void readFd(OO::HANDLE fd);

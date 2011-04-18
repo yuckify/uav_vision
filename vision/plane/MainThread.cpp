@@ -121,7 +121,7 @@ MainThread::MainThread() :
 }
 
 void MainThread::multTimeout() {
-	if(!gc.connected()) {
+	if(!gc.socket().connected()) {
 		OByteArray pack;
 		pack<<123;
 		multping->write(pack);
@@ -133,15 +133,15 @@ void MainThread::multError(OSockError e) {
 }
 
 void MainThread::incommingConnection(OO::HANDLE fd) {
-	if(!gc.connected()) {
+	if(!gc.socket().connected()) {
 		cout<<"New Ground Socket" <<endl;
 		multTimer.stop();
-		gc.setFileDescriptor(fd);
+		gc.socket().setHandle(fd);
 	}
 }
 
 void MainThread::writeImageDb() {
-	if(gc.connected()) {
+	if(gc.socket().connected()) {
 		OByteArray pack;
 		pack<<db;
 //		gc.write(ImageDetails, db);
@@ -168,7 +168,7 @@ void MainThread::readCameraFiles() {
 #ifdef __apple__
 			db[index].i_name = i->path().filename().string();
 #else
-			//old, work on linux not mac os
+			//works on linux not mac os
 			db[index].i_name = i->filename();
 #endif
 			if(!db[index].i_downloaded) {
@@ -177,7 +177,7 @@ void MainThread::readCameraFiles() {
 #ifdef __apple__
 				impath /= i->path().filename().string();
 #else
-				//old, work on linux not mac os
+				//works on linux not mac os
 				impath /= i->filename();
 #endif
 				
@@ -293,7 +293,7 @@ void MainThread::camControlRead() {
 					cambuff.clear();
 				}
 				
-				if(gc.connected() && state) {
+				if(gc.socket().connected() && state) {
 					OByteArray pack;
 					pack<<state;
 //					gc.write(CameraStatus, pack);

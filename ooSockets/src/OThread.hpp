@@ -88,6 +88,7 @@ class FdHandler {
 public:
 	FdHandler() {
 		FD_ZERO(&fdset);
+		devs.resize(FD_SETSIZE, 0);
 	}
 	
 	FdHandler(const FdHandler& other) {
@@ -96,10 +97,10 @@ public:
 	}
 	
 	void set(OO::HANDLE h, OIODevice* d) {
-		while(h >= devs.size()) devs.push_back(0);
-		
 		devs[h] = d;
 		FD_SET(h, &fdset);
+		
+		if(h >= fdmax) fdmax = h + 1;
 	}
 	
 	void clear(OO::HANDLE h) {
@@ -108,11 +109,14 @@ public:
 		devs[h] = 0;
 		FD_CLR(h, &fdset);
 		
-		if(devs.size() > 0) {
-			while(!(*devs.end())) {
-				if(!devs.size()) break;
-				devs.erase(devs.end());
+		if(h == fdmax-1) {
+			for(int i=h; i>=0; i--) {
+				if(devs[i]) {
+					fdmax = i+1;
+					return;
+				}
 			}
+			fdmax = 0;
 		}
 	}
 	
@@ -133,7 +137,7 @@ public:
 	}
 	
 	OO::HANDLE max() const {
-		return devs.size();
+		return fdmax;
 	}
 	
 	bool isEmpty() const {
@@ -150,6 +154,8 @@ public:
 	
 protected:
 	vector<OIODevice*> devs;
+	
+	OO::HANDLE fdmax;
 	
 #ifdef __windows__
 //	vector<OO::HANDLE> fdset;
@@ -188,42 +194,6 @@ struct OThreadFds {
 	OO::HANDLE fdmax;
 	
 	OO::HANDLE fdmin;
-	
-	
-	/*
-	///	Array of OIODevice map for reading.
-	OList<fdMap> readMap;
-	
-	/// Array of OIODevice map for writing.
-	OList<fdMap> writeMap;
-	
-	///	Array of OIODevice map for high priority data.
-	OList<fdMap> priorityMap;
-	
-	
-	
-	/// The fd_set is needed for the select function to check for errors.
-#ifdef __windows__
-	OList<HANDLE> priorityfds;
-#else
-	fd_set priorityfds;
-#endif
-	
-	///	The fd_set is needed for the select function.
-#ifdef __windows__
-	OList<HANDLE> readfds;
-#else
-	fd_set readfds;
-#endif
-	
-	/// The fd_set is needed for the select function for the 
-	/// write arguement.
-#ifdef __windows__
-	OList<HANDLE> writefds;
-#else
-	fd_set writefds;
-#endif
-	*/
 	
 	/// Delta list to store the list of active timers.
 	OList<TimerDelta> deltalist;
