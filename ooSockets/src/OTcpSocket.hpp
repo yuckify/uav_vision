@@ -69,6 +69,8 @@ public:
 	OTcpSocket(QObject* parent);
 #endif
 	
+	OTcpSocket(const OTcpSocket& other);
+	
 	/**	Open a connection to a host.
 	 *	@param addr The string address of the host to connect to.
 	 *	@param port The port on which to connect.

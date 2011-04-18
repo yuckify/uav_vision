@@ -50,8 +50,12 @@ OSocket::OSocket(QObject *parent) : qt_read(NULL), qt_write(NULL) {
 	writestat = false;
 	
 }
-
 #endif
+
+OSocket::OSocket(const OSocket &other) : qt_read(NULL), qt_write(NULL) {
+	fdes = other.fdes;
+	_clearError();
+}
 
 OSocket::~OSocket() {
 	close();

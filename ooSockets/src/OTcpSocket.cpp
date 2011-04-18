@@ -8,6 +8,10 @@ OTcpSocket::OTcpSocket(QObject *parent) : OSocket(parent) {
 	
 }
 
+OTcpSocket::OTcpSocket(const OTcpSocket &other) : OSocket(other) {
+	
+}
+
 bool OTcpSocket::connect(OString addr, 
 						 unsigned short port, 
 						 OO::SockFamily family) {
@@ -97,5 +101,8 @@ int OTcpSocket::write(OByteArray &data, int len) {
 }
 
 bool OTcpSocket::connected() {
-	return conn;
+	int error = 0;
+	socklen_t len = sizeof(error);
+	int retval = getsockopt(fdes, SOL_SOCKET, SO_ERROR, &error, &len);
+	return !retval;
 }

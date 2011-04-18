@@ -164,15 +164,21 @@ void MainThread::readCameraFiles() {
 		int index = 0;
 		bfs::directory_iterator end;
 		for(bfs::directory_iterator i(fdir); i!=end; i++, index++) {
+#ifdef __apple__
 			db[index].i_name = i->path().filename().string();
+#else
 			//old, work on linux not mac os
-//			db[index].i_name = i->filename();
+			db[index].i_name = i->filename();
+#endif
 			if(!db[index].i_downloaded) {
 				//setup the destination path
 				bfs::path impath(destdir);
+#ifdef __apple__
 				impath /= i->path().filename().string();
+#else
 				//old, work on linux not mac os
-//				impath /= i->filename();
+				impath /= i->filename();
+#endif
 				
 				//copy the file off the camera
 				bfs::copy_file(*i, impath);

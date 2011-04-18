@@ -120,6 +120,8 @@ public:
 	OSocket(QObject* parent);
 #endif
 	
+	OSocket(const OSocket& other);
+	
 	~OSocket();
 	
 	/// Get socket information about a host.
