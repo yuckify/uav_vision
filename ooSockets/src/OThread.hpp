@@ -90,9 +90,13 @@ public:
 		FD_ZERO(&fdset);
 	}
 	
+	FdHandler(const FdHandler& other) {
+		devs = other.devs;
+		
+	}
+	
 	void set(OO::HANDLE h, OIODevice* d) {
-		if(unsigned(h) >= devs.size())
-			devs.resize(h, 0);
+		while(h >= devs.size()) devs.push_back(0);
 		
 		devs[h] = d;
 		FD_SET(h, &fdset);
@@ -101,7 +105,7 @@ public:
 	void clear(OO::HANDLE h) {
 		if(unsigned(h) >= devs.size()) return;
 		
-		devs[h] = NULL;
+		devs[h] = 0;
 		FD_CLR(h, &fdset);
 		
 		if(devs.size() > 0) {
@@ -124,8 +128,8 @@ public:
 		return 0;
 	}
 	
-	OIODevice& operator[](OO::HANDLE h) {
-		return *devs[h];
+	OIODevice* operator[](OO::HANDLE h) {
+		return devs[h];
 	}
 	
 	OO::HANDLE max() const {
@@ -157,10 +161,17 @@ protected:
 struct OThreadFds {
 	OThreadFds() : tout(NULL) {
 		deltalist.clear();
+		fdmin = 100000;
+		fdmax = 0;
 	}
 	
 	OThreadFds(const OThreadFds& other) : tout(NULL) {
 		deltalist = other.deltalist;
+		fdmin = other.fdmin;
+		fdmax = other.fdmax;
+		readfds = other.readfds;
+		writefds = other.writefds;
+		errorfds = other.errorfds;
 	}
 	
 	OThreadFds& operator=(const OThreadFds& other) {

@@ -183,30 +183,31 @@ bool OThread::execOnce() {
 
 #else
 	//handle the fds with pending errors
-	unsigned length = fdm->errorfds.size();
-	for(OO::HANDLE i=fdm->fdmin; i<length; i++) {
+	unsigned length = fdm->errorfds.size()+1;
+	for(OO::HANDLE i=fdm->fdmin; unsigned(i)<length; i++) {
 		//if the fd is set then call the runloop for the associated object
 		if(FD_ISSET(i, &tmperrorset)) {
-			fdm->errorfds[i].priorityLoop();
+			fdm->errorfds[i]->priorityLoop();
 		}
 	}
 	
 	//handle the fds ready to be read from
-	length = fdm->readfds.size();
-	for(OO::HANDLE i=0; i<length; i++) {
+	length = fdm->readfds.size()+1;
+	for(OO::HANDLE i=fdm->fdmin; unsigned(i)<length; i++) {
 		//if the fd is set then call the runloop for the associated object
 		if(FD_ISSET(i, &tmpreadset)) {
-			fdm->readfds[i].readLoop();
+			fdm->readfds[i]->readLoop();
 		}
 	}
 	//handle the fds ready to be written to
-	length = fdm->writefds.size();
-	for(OO::HANDLE i=0; i<length; i++) {
+	length = fdm->writefds.size()+1;
+	for(OO::HANDLE i=fdm->fdmin; unsigned(i)<length; i++) {
 		//if the fd is set then call the runloop for the associated object
 		if(FD_ISSET(i, &tmpwriteset)) {
-			fdm->writefds[i].writeLoop();
+			fdm->writefds[i]->writeLoop();
 		}
 	}
+	
 #endif
 	
 	return true;

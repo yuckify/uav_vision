@@ -26,10 +26,11 @@ MainThread::MainThread() :
 	if(ports.size() == 0) {
 		cerr<<"*****No available serial ports.*****" <<endl;
 //		::exit(0);
+	} else {
+		cout<<"name: " <<ports[0].hwName() <<endl;
+		initserial.readyReadFunc(bind(&MainThread::initSerialRead, this));
+		initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
 	}
-	cout<<"name: " <<ports[0].hwName() <<endl;
-	initserial.readyReadFunc(bind(&MainThread::initSerialRead, this));
-	initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
 	
 	add_capture = false;
 	
