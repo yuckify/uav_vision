@@ -137,7 +137,7 @@ bool OUdpSocket::addMembership(OSockAddress group, OSockAddress ifa) {
 			//the darwin kernel is multihomed so we have to add each
 			//multicast capable interface to our listening socket
 			//get the net list
-			ONetList nets = OSocket::netList();
+			ONetList nets = ONet::netList();
 			
 			//add the groups
 			for(auto i=nets.begin(); i<nets.end(); i++) {
@@ -170,7 +170,7 @@ bool OUdpSocket::addMembership(OSockAddress group, OSockAddress ifa) {
 			//the darwin kernel is multihomed so we have to add each
 			//multicast capable interface to our listening socket
 			//get the net list
-			ONetList nets = OSocket::netList();
+			ONetList nets = ONet::netList();
 			
 			//add the groups
 			for(auto i=nets.begin(); i<nets.end(); i++) {

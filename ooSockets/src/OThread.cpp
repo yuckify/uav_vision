@@ -84,20 +84,20 @@ bool OThread::execOnce() {
 #else
 	//if there are no more file descriptors and the timeout
 	//is not set, exit the run loop since there is nothing to do
-	if(!fdm->readMap.size() && 
-	   !fdm->writeMap.size() && 
-	   !fdm->priorityMap.size() && 
+	if(fdm->readfds.isEmpty() && 
+	   fdm->writefds.isEmpty() && 
+	   fdm->errorfds.isEmpty() && 
 	   !fdm->tout) {
 		return false;
 	}
 
-	fd_set tmpreadset = fdm->readfds;
-	fd_set tmpwriteset = fdm->writefds;
-	fd_set tmppriorityset = fdm->priorityfds;
+	fd_set tmpreadset = fdm->readfds.fdSet();
+	fd_set tmpwriteset = fdm->writefds.fdSet();
+	fd_set tmperrorset = fdm->errorfds.fdSet();
 	
 	//block on the reading fds
 	int ret = select(fdm->fdmax + 1, &tmpreadset, 
-					 &tmpwriteset, &tmppriorityset, 
+					 &tmpwriteset, &tmperrorset, 
 					 fdm->tout.get());
 	
 #endif
@@ -183,28 +183,28 @@ bool OThread::execOnce() {
 
 #else
 	//handle the fds with pending errors
-	unsigned length = fdm->priorityMap.size();
-	for(unsigned i=0; i<length; i++) {
+	unsigned length = fdm->errorfds.size();
+	for(OO::HANDLE i=fdm->fdmin; i<length; i++) {
 		//if the fd is set then call the runloop for the associated object
-		if(FD_ISSET(fdm->priorityMap[i].fd, &tmppriorityset)) {
-			fdm->priorityMap[i].obj->priorityLoop();
+		if(FD_ISSET(i, &tmperrorset)) {
+			fdm->errorfds[i].priorityLoop();
 		}
 	}
 	
 	//handle the fds ready to be read from
-	length = fdm->readMap.size();
-	for(unsigned i=0; i<length; i++) {
+	length = fdm->readfds.size();
+	for(OO::HANDLE i=0; i<length; i++) {
 		//if the fd is set then call the runloop for the associated object
-		if(FD_ISSET(fdm->readMap[i].fd, &tmpreadset)) {
-			fdm->readMap[i].obj->readLoop();
+		if(FD_ISSET(i, &tmpreadset)) {
+			fdm->readfds[i].readLoop();
 		}
 	}
 	//handle the fds ready to be written to
-	length = fdm->writeMap.size();
-	for(unsigned i=0; i<length; i++) {
+	length = fdm->writefds.size();
+	for(OO::HANDLE i=0; i<length; i++) {
 		//if the fd is set then call the runloop for the associated object
-		if(FD_ISSET(fdm->writeMap[i].fd, &tmpwriteset)) {
-			fdm->writeMap[i].obj->writeLoop();
+		if(FD_ISSET(i, &tmpwriteset)) {
+			fdm->writefds[i].writeLoop();
 		}
 	}
 #endif
@@ -216,33 +216,34 @@ void OThread::allocThreadFd() {
 	if(!fdm) fdm.reset(new OThreadFds);
 }
 
+void OThread::recalcMinMax(OO::HANDLE fd) {
+	if(fd == fdm->fdmin) {
+		OO::HANDLE mina = fdm->readfds.min();
+		OO::HANDLE minb = fdm->writefds.min();
+		OO::HANDLE minc = fdm->errorfds.min();
+		fdm->fdmin = ::min(mina, ::min(minb, minc));
+	} else if(fd == fdm->fdmax-1) {
+		OO::HANDLE maxa = fdm->readfds.max();
+		OO::HANDLE maxb = fdm->writefds.max();
+		OO::HANDLE maxc = fdm->errorfds.max();
+		fdm->fdmax = ::max(maxa, ::max(maxb, maxc));
+	}
+}
+
 void OThread::registerReadFD(OO::HANDLE fd, OIODevice* o) {
 	this->allocThreadFd();
 	
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
-	fdMap xfer(fd, o);
+	//recalculate the max fd
+	if(fd >= fdm->fdmax) fdm->fdmax = fd+1;
 	
-	//check to make sure the file descriptor is not already added
-	for(unsigned i=0; i<fdm->readMap.size(); i++) {
-		//the file descriptor matches, so just reset the object
-		//pointer and we are done here
-		if(fdm->readMap[i].fd == fd) {
-			fdm->readMap[i].obj = o;
-			return;
-		}
-	}
+	//recalculate the min fd
+	if(fd < fdm->fdmin) fdm->fdmin = fd;
 	
-	fdm->readMap.push_back(xfer);
-	
-#ifdef __windows__
-	fdm->readfds.push_back(fd);
-#else
-	FD_SET(fd, &fdm->readfds);
-	
-	if(fd > fdm->fdmax) fdm->fdmax = fd;
-#endif
+	//set the fd
+	fdm->readfds.set(fd, o);
 }
 
 void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
@@ -251,110 +252,60 @@ void OThread::registerWriteFD(OO::HANDLE fd, OIODevice *o) {
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
-	//check to make sure the file descriptor is not already added
-	for(unsigned i=0; i<fdm->writeMap.size(); i++) {
-		//the file descriptor matches, so just reset the object
-		//pointer and we are done here
-		if(fdm->writeMap[i].fd == fd) {
-			fdm->writeMap[i].obj = o;
-			return;
-		}
-	}
+	//recalculate the max fd
+	if(fd >= fdm->fdmax) fdm->fdmax = fd+1;
 	
-	fdm->writeMap.push_back(fdMap(fd, o));
+	//recalculate the min fd
+	if(fd < fdm->fdmin) fdm->fdmin = fd;
 	
-#ifdef __windows__
-
-#else
-	FD_SET(fd, &fdm->writefds);
-#endif
+	//set the fd
+	fdm->writefds.set(fd, o);
 }
 
-void OThread::registerPriorityFD(OO::HANDLE fd, OIODevice* o) {
+void OThread::registerErrorFD(OO::HANDLE fd, OIODevice* o) {
 	this->allocThreadFd();
 	
 	//first make sure we are working with a valid file descriptor
 	if(fd <= 0) return;
 	
-	fdMap xfer(fd, o);
+	//recalculate the max fd
+	if(fd >= fdm->fdmax) fdm->fdmax = fd+1;
 	
-	//check to make sure the file descriptor is not already added
-	for(unsigned i=0; i<fdm->priorityMap.size(); i++) {
-		//the file descriptor matches, so just reset the object
-		//pointer and we are done here
-		if(fdm->priorityMap[i].fd == fd) {
-			fdm->priorityMap[i].obj = o;
-			return;
-		}
-	}
+	//recalculate the min fd
+	if(fd < fdm->fdmin) fdm->fdmin = fd;
 	
-	fdm->priorityMap.push_back(xfer);
-	
-#ifdef __windows__
-	
-#else
-	FD_SET(fd, &fdm->priorityfds);
-#endif
+	//set the fd
+	fdm->errorfds.set(fd, o);
 }
 
 void OThread::unregisterReadFD(OO::HANDLE fd) {
 	this->allocThreadFd();
 	
-	//find the fd in the map and remove it
-	unsigned length = fdm->readMap.size();
-	for(unsigned i=0; i<length; i++) {
-		if(fdm->readMap[i].fd == fd) {
-			fdm->readMap.erase(fdm->readMap.begin() + i);
-			break;
-		}
-	}
+	//reset the maxfs or minfd values if they have changed
+	recalcMinMax(fd);
 	
-	//get the fd out of the fd_set
-#ifdef __windows__
-
-#else
-	FD_CLR(fd, &fdm->readfds);
-#endif
+	//clear the fd
+	fdm->readfds.clear(fd);
 }
 
 void OThread::unregisterWriteFD(OO::HANDLE fd) {
 	this->allocThreadFd();
 	
-	//find the fd in the write map and remove it
-	unsigned length = fdm->writeMap.size();
-	for(unsigned i=0; i<length; i++) {
-		if(fdm->writeMap[i].fd == fd) {
-			fdm->writeMap.removeAt(i);
-			break;
-		}
-	}
+	//reset the maxfs or minfd values if they have changed
+	recalcMinMax(fd);
 	
-	//get the fd out of the fd_set
-#ifdef __windows__
-
-#else
-	FD_CLR(fd, &fdm->writefds);
-#endif
+	//clear the fd
+	fdm->writefds.clear(fd);
 }
 
-void OThread::unregisterPriorityFD(OO::HANDLE fd) {
+void OThread::unregisterErrorFD(OO::HANDLE fd) {
 	this->allocThreadFd();
 	
-	//find the fd in the write map and remove it
-	unsigned length = fdm->priorityMap.size();
-	for(unsigned i=0; i<length; i++) {
-		if(fdm->priorityMap[i].fd == fd) {
-			fdm->priorityMap.removeAt(i);
-			break;
-		}
-	}
+	//reset the maxfs or minfd values if they have changed
+	recalcMinMax(fd);
 	
-	//get the fd out of the fd_set
-#ifdef __windows__
-
-#else
-	FD_CLR(fd, &fdm->priorityfds);
-#endif
+	//clear the fd
+	fdm->errorfds.clear(fd);
 }
 
 void OThread::registerTimer(OTimerBase* tim) {

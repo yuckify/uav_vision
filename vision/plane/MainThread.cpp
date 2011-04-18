@@ -164,11 +164,15 @@ void MainThread::readCameraFiles() {
 		int index = 0;
 		bfs::directory_iterator end;
 		for(bfs::directory_iterator i(fdir); i!=end; i++, index++) {
-			db[index].i_name = i->filename();
+			db[index].i_name = i->path().filename().string();
+			//old, work on linux not mac os
+//			db[index].i_name = i->filename();
 			if(!db[index].i_downloaded) {
 				//setup the destination path
 				bfs::path impath(destdir);
-				impath /= i->filename();
+				impath /= i->path().filename().string();
+				//old, work on linux not mac os
+//				impath /= i->filename();
 				
 				//copy the file off the camera
 				bfs::copy_file(*i, impath);
@@ -198,7 +202,9 @@ bfs::path MainThread::find_files(bfs::path p) {
 	for(bfs::directory_iterator i(p); i!=end; i++) {
 		if(bfs::is_directory(*i)) {
 			return find_files(*i);
-		} else if(i->string().find(".JPG")) {
+		} else if(i->path().string().find(".JPG")) {
+			//old, work on linux not mac os
+//		} else if(i->string().find(".JPG")) {
 			return p;
 		}
 	}

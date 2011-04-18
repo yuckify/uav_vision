@@ -84,45 +84,102 @@ struct TimerDelta {
 	OTimerBase* timer;
 };
 
+class FdHandler {
+public:
+	FdHandler() {
+		FD_ZERO(&fdset);
+	}
+	
+	void set(OO::HANDLE h, OIODevice* d) {
+		if(unsigned(h) >= devs.size())
+			devs.resize(h, 0);
+		
+		devs[h] = d;
+		FD_SET(h, &fdset);
+	}
+	
+	void clear(OO::HANDLE h) {
+		if(unsigned(h) >= devs.size()) return;
+		
+		devs[h] = NULL;
+		FD_CLR(h, &fdset);
+		
+		if(devs.size() > 0) {
+			while(!(*devs.end())) {
+				if(!devs.size()) break;
+				devs.erase(devs.end());
+			}
+		}
+	}
+	
+	OO::HANDLE min() const {
+		if(devs.size()) {
+			for(OO::HANDLE i=0; unsigned(i)<devs.size(); i++) {
+				if(devs[i]) {
+					return i;
+				}
+			}
+		}
+		
+		return 0;
+	}
+	
+	OIODevice& operator[](OO::HANDLE h) {
+		return *devs[h];
+	}
+	
+	OO::HANDLE max() const {
+		return devs.size();
+	}
+	
+	bool isEmpty() const {
+		return !devs.size();
+	}
+	
+	int size() const {
+		return devs.size();
+	}
+	
+	fd_set& fdSet() {
+		return fdset;
+	}
+	
+protected:
+	vector<OIODevice*> devs;
+	
+#ifdef __windows__
+//	vector<OO::HANDLE> fdset;
+#else
+	fd_set fdset;
+#endif
+};
+
 struct OThreadFds {
 	OThreadFds() : tout(NULL) {
-		fdmax = 0;
-		readMap.clear();
-		writeMap.clear();
-		priorityMap.clear();
-		FD_ZERO(&readfds);
-		FD_ZERO(&writefds);
-		FD_ZERO(&priorityfds);
 		deltalist.clear();
 	}
 	
 	OThreadFds(const OThreadFds& other) : tout(NULL) {
-		fdmax = other.fdmax;
-		readMap = other.readMap;
-		writeMap = other.writeMap;
-		priorityMap = other.priorityMap;
-		readfds = other.readfds;
-		writefds = other.writefds;
-		priorityfds = other.priorityfds;
 		deltalist = other.deltalist;
 	}
 	
 	OThreadFds& operator=(const OThreadFds& other) {
-		fdmax = other.fdmax;
-		readMap = other.readMap;
-		writeMap = other.writeMap;
-		priorityMap = other.priorityMap;
-		readfds = other.readfds;
-		writefds = other.writefds;
-		priorityfds = other.priorityfds;
 		deltalist = other.deltalist;
 		tout.reset(NULL);
 		
 		return *this;
 	}
 	
-	int fdmax;
+	FdHandler readfds;
+	FdHandler writefds;
+	FdHandler errorfds;
 	
+	OO::HANDLE fdmax;
+	
+	OO::HANDLE fdmin;
+	
+	
+	/*
 	///	Array of OIODevice map for reading.
 	OList<fdMap> readMap;
 	
@@ -131,6 +188,8 @@ struct OThreadFds {
 	
 	///	Array of OIODevice map for high priority data.
 	OList<fdMap> priorityMap;
+	
+	
 	
 	/// The fd_set is needed for the select function to check for errors.
 #ifdef __windows__
@@ -153,6 +212,7 @@ struct OThreadFds {
 #else
 	fd_set writefds;
 #endif
+	*/
 	
 	/// Delta list to store the list of active timers.
 	OList<TimerDelta> deltalist;
@@ -249,7 +309,7 @@ public:
 	
 	///	Children of this OThread call this to register their error fds
 	///	so this OThread may check for errors.
-	void registerPriorityFD(OO::HANDLE fd, OIODevice* o);
+	void registerErrorFD(OO::HANDLE fd, OIODevice* o);
 	
 	///	Children of this OThread call this to unregister their read fds
 	///	so they may be destroyed cleanly.
@@ -261,7 +321,7 @@ public:
 	
 	///	Children of this OThread call this to unregister their error fds
 	///	so they may be destroyed cleanly.
-	void unregisterPriorityFD(OO::HANDLE fd);
+	void unregisterErrorFD(OO::HANDLE fd);
 	
 	/// A child timer of this OThread calls this function to register
 	/// itself.
@@ -272,6 +332,8 @@ public:
 	void unregisterTimer(OTimerBase* tim);
 	
 protected:
+	
+	void recalcMinMax(OO::HANDLE fd);
 	
 	void allocThreadFd();
 	

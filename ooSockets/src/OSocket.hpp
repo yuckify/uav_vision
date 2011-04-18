@@ -383,7 +383,7 @@ protected:
 		if(par && fdes) {
 			par->unregisterReadFD((OO::HANDLE)fdes);
 			par->unregisterWriteFD((OO::HANDLE)fdes);
-			par->unregisterPriorityFD((OO::HANDLE)fdes);
+			par->unregisterErrorFD((OO::HANDLE)fdes);
 		}
 #ifdef OO_QT
 		if(qtpar) {

@@ -12,18 +12,30 @@ win {
 
 }
 
-unix {
+linux-g++ {
 	CONFIG += link_pkgconfig
+
+#	LIBS += -L/usr/local/lib -lopencv_core \
+#	-lopencv_imgproc -lopencv_highgui -lopencv_ml \
+#	-lopencv_video -lopencv_features2d \
+#	-lopencv_calib3d -lopencv_objdetect \
+#	-lopencv_contrib -lopencv_legacy -lopencv_flann
+#	INCLUDEPATH += -I/usr/local/include/opencv -I/usr/local/include
 }
 
 macx {
 	QMAKE_CXX = /opt/local/bin/gcc-mp-4.5
 	INCLUDEPATH += /usr/local/include
 	PKGCONFIG += /usr/local/lib/pkgconfig/opencv.pc
+	LIBS += -L/opt/local/lib -lboost_filesystem-mt \
+	-lboost_date_time -lboost_iostreams \
+	-lboost_system-mt -lboost_thread-mt \
+	-lboost_regex-mt
+
 }
 linux-g++ {
 	QMAKE_CXX = g++-4.5
-	LIBS += -lboost_thread-mt
+	LIBS += -lboost_thread-mt `pkg-config --libs opencv`
 }
 QMAKE_CXXFLAGS = -std=c++0x -O3
 INCLUDEPATH += ../../ooSockets/src \
@@ -33,8 +45,7 @@ LIBS += -L/opt/local/lib/gcc45 \
     -lboost_regex \
     -lpthread \
     -lboost_filesystem \
-    -lboost_system \
-	`pkg-config --libs opencv`
+    -lboost_system
 
 DEFINES += OO_OPENCV
 
