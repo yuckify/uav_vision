@@ -123,7 +123,7 @@ protected:
  *	uint8_t header = 0x05;
  *	uint16_t length = 0;
  *	
- *	//instantiate the OByteArray and pack the data
+ *	//instantiate an OByteArray and pack the data
  *	//the length variable will act as a placeholder
  *	//we will insert a value for it later after we know how
  *	//long the OByteArray will actually be
@@ -193,9 +193,9 @@ public:
 	template <class T> OByteArray& operator&(T& item) {
 		OByteArray& arr = *this;
 		if(mem->dir == OO::Input) {
-			arr<<item;
+			arr.write(item);
 		} else {
-			arr>>item;
+			arr.write(item);
 		}
 		return *this;
 	}
@@ -263,19 +263,20 @@ public:
 	template <class T> void write(const vector<T>& vec) {
 		OByteArray& arr = *this;
 		uint32_t length = vec.size();
-		arr<<length;
+		arr.write(length);
 		for(unsigned int i=0; i<length; i++)
-			arr<<(T&)(vec[i]);
+			arr.write((T&)(vec[i]));
 	}
 	
 	/// This function is overloaded.
 	template <class T, class U> void write(const map<T, U>& ma) {
 		OByteArray& arr = *this;
 		uint32_t length = ma.size();
-		arr<<length;
+		arr.write(length);
 		
 		for_each(ma.begin(), ma.end(), [&arr] (const std::pair<T, U>& pa) {
-			arr<<(T&)pa.first <<(U&)pa.second;
+			arr.write((T&)pa.first);
+			arr.write((U&)pa.second);
 		});
 	}
 	

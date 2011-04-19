@@ -153,6 +153,17 @@ CVOperator::CVOperator(QWidget *parent) :
 	connect(statusdock, SIGNAL(visibilityChanged(bool)), this, SLOT(status_vis(bool)));
 	this->addDockWidget(Qt::LeftDockWidgetArea, statusdock);
 	
+	//setup the record feature
+	buttonrecord = new QPushButton(tr("Record"));
+	connect(buttonrecord, SIGNAL(clicked()), this, SLOT(recordPress()));
+	video = 0;
+	
+	//setup the video menu
+	QMenu* videomenu = this->menuBar()->addMenu(tr("Video"));
+	videots = videomenu->addAction(tr("Time Stamp Video"), this, SLOT(setVideoTs()));
+	videots->setCheckable(true);
+	videomenu->addAction(tr("Set File Name"), this, SLOT(setVideoFn()));
+	
 	statlayout = new QVBoxLayout;
 	QWidget* widgetwrapper = new QWidget;
 	widgetwrapper->setLayout(statlayout);
@@ -172,7 +183,11 @@ CVOperator::CVOperator(QWidget *parent) :
 	statlayout->addLayout(control1);
 	statlayout->addLayout(control2);
 	statlayout->addWidget(dl);
+	statlayout->addWidget(buttonrecord);
 	statusdock->setWidget(widgetwrapper);
+	
+	//load the settings for the window
+	this->loadSettings();
 	
 	//setup networking
 	connNotifier = NULL;
@@ -185,9 +200,6 @@ CVOperator::CVOperator(QWidget *parent) :
 				<<" " <<multlisten->strerror() <<endl;
 	}
 	
-	//load the settings for the window
-	this->loadSettings();
-	
 	gc.setSendHandler(CameraZoomIn, 0);
 	gc.setSendHandler(CameraZoomOut, 0);
 	gc.setSendHandler(CameraPower, 0);
@@ -198,12 +210,7 @@ CVOperator::CVOperator(QWidget *parent) :
 	
 	
 	//setup the callbacks for the ground connection
-	gc.setRecvHandler(VideoFrame, [&disp](OByteArray ba)->void{
-		static int c = 0;
-		c++;
-		if(c>10) ::exit(0);
-		
-		
+	gc.setRecvHandler(VideoFrame, [this](OByteArray ba)->void{
 		CvMat* compFrame = NULL;
 		
 		ba>>compFrame;
@@ -212,15 +219,22 @@ CVOperator::CVOperator(QWidget *parent) :
 		
 		if(img == NULL) return;
 		
+		framesize.width = img->width;
+		framesize.height = img->height;
+		
+		if(video) cvWriteFrame(video, img);
+		
 		//display the image
 		disp->setPixmap(QPixmap::fromImage(IplImageToQImage(img), 0));
 		
 		//release memory we won't be using anymore
 		cvReleaseMat(&compFrame);
 		cvReleaseImage(&img);
+		
+		
 	});
 	
-	gc.setRecvHandler(ImageDetails, [&db, this](OByteArray ba)->void{
+	gc.setRecvHandler(ImageDetails, [this](OByteArray ba)->void{
 		ba>>db;
 		showImageDb(db);
 	});
@@ -259,6 +273,8 @@ void CVOperator::saveSettings() {
 	//save the geometry settings
 	QSettings settings("Engineerutopia", "Vision Operator");
 	settings.setValue("main_window", this->saveGeometry());
+	settings.setValue("video_fn", videofn);
+	settings.setValue("video_timestamp", videots->isChecked());
 }
 
 void CVOperator::loadSettings() {
@@ -266,6 +282,50 @@ void CVOperator::loadSettings() {
 	QSettings settings("Engineerutopia", "Vision Operator");
 	this->restoreGeometry(settings.value("main_window", 
 										 this->saveGeometry()).toByteArray());
+	videofn = settings.value("video_fn", "video").toString();
+	bool tstmp = settings.value("video_timestamp", true).toBool();
+	this->videots->setChecked(tstmp);
+}
+
+void CVOperator::recordPress() {
+	if(video) {
+		//stop recording
+		buttonrecord->setText(tr("Record"));
+		
+		cvReleaseVideoWriter(&video);
+		video = 0;
+		
+	} else {
+		//start recording
+		if(framesize.height < 0 || framesize.width < 0) {
+			return;
+		}
+		
+		buttonrecord->setText(tr("Stop"));
+		
+		if(!video && !videofn.isEmpty()) {
+			QString fullfn = videofn;
+			if(videots->isChecked())
+				fullfn.append(QDateTime::currentDateTime().toString("-ddd MMM dd, h:m:s AP"));
+			fullfn.append(tr(".avi"));
+			
+			video = cvCreateVideoWriter(fullfn.toAscii(), CV_FOURCC('P','I','M','1'), 
+										30, framesize);
+		}
+	}
+}
+
+void CVOperator::setVideoFn() {
+	videofn = QFileDialog::getSaveFileName(this, tr("Save Video"), videofn);
+	if(videofn.isEmpty())
+		videofn = tr("video");
+}
+
+void CVOperator::setVideoTs() {
+	if(!videots->isChecked())
+		videots->setChecked(false);
+	else
+		videots->setChecked(true);
 }
 
 void CVOperator::zoomSliderSet(int val) {
@@ -297,7 +357,7 @@ void CVOperator::zoomSliderSet(int val) {
 }
 
 void CVOperator::compPressed() {
-	if(gc.connected()) {
+	if(gc.socket().connected()) {
 		OByteArray pack;
 		OString compmeth = compress->text();
 		pack<<compmeth;
@@ -320,7 +380,7 @@ void CVOperator::calcData() {
 }
 
 void CVOperator::camera_zin() {
-	if(gc.connected()) {
+	if(gc.socket().connected()) {
 		OByteArray pack;
 		int zoomlen = 1;
 		pack<<zoomlen;
@@ -333,7 +393,7 @@ void CVOperator::camera_zin() {
 }
 
 void CVOperator::camera_zout() {
-	if(gc.connected()) {
+	if(gc.socket().connected()) {
 		OByteArray pack;
 		int zoomlen = 1;
 		pack<<zoomlen;
@@ -360,7 +420,7 @@ void CVOperator::camera_download() {
 }
 
 void CVOperator::smallMsg(int in) {
-	if(gc.connected()) {
+	if(gc.socket().connected()) {
 		OByteArray data;
 		gc.write(in, data);
 	}
@@ -572,7 +632,7 @@ void CVOperator::multActivated(int) {
 	
 	OByteArray data = multlisten->readAll(addr);
 	
-	if(!gc.connected()) {
+	if(!gc.socket().connected()) {
 		log<<"New Connection to Plane" <<endl;
 		setCVOperatorStatus(true);
 		

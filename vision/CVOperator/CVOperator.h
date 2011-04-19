@@ -23,6 +23,7 @@
 #include<QFile>
 #include<QTextStream>
 #include<QSlider>
+#include<QThread>
 
 #include<iostream>
 #include<memory>
@@ -137,7 +138,18 @@ protected:
 	QPushButton* updatecomp;
 	QSlider* zoomslider;
 	int zoompos;
+	
+	QPushButton* buttonrecord;
+	CvVideoWriter* video;
+	QString videofn;
+	QAction* videots;
+	CvSize framesize;
+	
 public slots:
+	void recordPress();
+	void setVideoFn();
+	void setVideoTs();
+	
 	//this function is called when the user releases the slider
 	//so the zoom value may be uploaded to the plane
 	void zoomSliderSet(int val);
