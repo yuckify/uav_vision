@@ -4,9 +4,11 @@ OTcpSocket::OTcpSocket(OThread *parent) : OSocket(parent) {
 	
 }
 
+#ifdef OO_QT
 OTcpSocket::OTcpSocket(QObject *parent) : OSocket(parent) {
 	
 }
+#endif
 
 OTcpSocket::OTcpSocket(const OTcpSocket &other) : OSocket(other) {
 	

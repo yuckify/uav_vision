@@ -112,4 +112,5 @@ HEADERS += MainThread.h \
     ../../ooSockets/src/ODataStream.hpp
 
 OTHER_FILES += \
-    ../plane-build-desktop/Makefile
+    ../plane-build-desktop/Makefile \
+    Makefile

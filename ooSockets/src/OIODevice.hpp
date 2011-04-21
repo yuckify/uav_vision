@@ -30,7 +30,11 @@
 #include<QObject>
 #endif
 
-class OIODevice : public QObject {
+class OIODevice 
+#ifdef OO_QT
+	: public QObject 
+#endif
+{
 #ifdef OO_QT
 	Q_OBJECT
 #endif

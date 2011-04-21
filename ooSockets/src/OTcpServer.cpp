@@ -1,12 +1,16 @@
 #include"OTcpServer.hpp"
 
 OTcpServer::OTcpServer(OThread *parent) : OSocket(parent) {
+#ifdef OO_QT
 	readyReadPatch = bind(&OTcpServer::readLoop, this);
+#endif
 }
 
+#ifdef OO_QT
 OTcpServer::OTcpServer(QObject *parent) : OSocket(parent) {
 	readyReadPatch = bind(&OTcpServer::readLoop, this);
 }
+#endif
 
 bool OTcpServer::listen(const OAddressInfo& info) {
 	return OSocket::listen(info);
@@ -41,6 +45,8 @@ void OTcpServer::writeLoop() {
 	incommingLoop();
 }
 
+#ifdef OO_QT
 void OTcpServer::readyReadSlot() {
 	this->incommingLoop();
 }
+#endif

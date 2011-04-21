@@ -2,7 +2,11 @@
 
 bool OSocket::initSockLimit = false;
 
-OSocket::OSocket(OThread *parent) : qt_read(NULL), qt_write(NULL) {
+OSocket::OSocket(OThread *parent) 
+#ifdef OO_QT
+	: qt_read(NULL), qt_write(NULL) 
+#endif
+{
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -17,7 +21,9 @@ OSocket::OSocket(OThread *parent) : qt_read(NULL), qt_write(NULL) {
 
 
 	_clearError();
+#ifdef OO_QT
 	qtpar = 0;
+#endif
 	par = parent;
 	sockerr = 0;
 	fdes = 0;
@@ -26,7 +32,11 @@ OSocket::OSocket(OThread *parent) : qt_read(NULL), qt_write(NULL) {
 }
 
 #ifdef OO_QT
-OSocket::OSocket(QObject *parent) : qt_read(NULL), qt_write(NULL) {
+OSocket::OSocket(QObject *parent) 
+#ifdef OO_QT
+	: qt_read(NULL), qt_write(NULL) 
+#endif
+{
 	//set the socket limit to a much larger number
 	if(!initSockLimit) {
 #ifdef __apple__
@@ -40,7 +50,9 @@ OSocket::OSocket(QObject *parent) : qt_read(NULL), qt_write(NULL) {
 	}
 	
 	_clearError();
+#ifdef OO_QT
 	qtpar = parent;
+#endif
 	par = 0;
 	sockerr = 0;
 	fdes = 0;
@@ -50,7 +62,11 @@ OSocket::OSocket(QObject *parent) : qt_read(NULL), qt_write(NULL) {
 }
 #endif
 
-OSocket::OSocket(const OSocket &other) : qt_read(NULL), qt_write(NULL) {
+OSocket::OSocket(const OSocket &other) 
+#ifdef OO_QT
+	: qt_read(NULL), qt_write(NULL) 
+#endif
+{
 	fdes = other.fdes;
 	_clearError();
 }
