@@ -14,7 +14,7 @@ macx {
 
 INCLUDEPATH += /usr/include
 linux-g++ {
-	QMAKE_CXX = g++-4.5
+        QMAKE_CXX = g++-4.4
 	LIBS += `pkg-config --libs opencv`
 }
 QMAKE_CXXFLAGS = -std=c++0x -O3
