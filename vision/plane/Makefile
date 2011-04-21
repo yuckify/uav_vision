@@ -26,9 +26,9 @@ SOURCES=../../ooSockets/src/OAddressInfo.cpp \
 main.cpp \
 MainThread.cpp \
 VideoThread.cpp
-CC=g++-4.5
-CFLAGS=-c -std=c++0x -Wall -DOO_OPENCV -I../../ooSockets/src -I. -I../common
-LDFLAGS=
+CC=g++
+CFLAGS=-c -std=c++0x -Wall -DOO_OPENCV -I../../ooSockets/src -I. -I../common `pkg-config --cflags opencv`
+LDFLAGS=`pkg-config --libs opencv`
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=plane
 all: $(SOURCES) $(EXECUTABLE)
