@@ -26,7 +26,7 @@ SOURCES=../../ooSockets/src/OAddressInfo.cpp \
 main.cpp \
 MainThread.cpp \
 VideoThread.cpp
-CC=g++
+CC=arm-angstrom-linux-gnueabi-g++
 CFLAGS=-c -std=c++0x -Wall -DOO_OPENCV -I../../ooSockets/src -I. -I../common `pkg-config --cflags opencv`
 LDFLAGS=`pkg-config --libs opencv`
 OBJECTS=$(SOURCES:.cpp=.o)
