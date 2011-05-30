@@ -8,6 +8,7 @@
 #include<boost/thread/mutex.hpp>
 #include<sys/types.h>
 #include<assert.h>
+#include<boost/interprocess/smart_ptr/unique_ptr.hpp>
 
 #include<OTcpSocket.hpp>
 #include<OO.hpp>
