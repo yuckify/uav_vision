@@ -62,19 +62,19 @@ MainThread::MainThread() :
 	gc.setSendHandler(ImageDetails, PriorityMed);
 	gc.setDisconnectSig(bind(&MainThread::groundDisconnected, this));
 	//setup the receive handlers
-	gc.setRecvHandler(CameraZoomIn, bind(&MainThread::cameraZoomIn, 
+	gc.setRecvHandler(CameraZoomIn, boost::bind(&MainThread::cameraZoomIn, 
 										 this, std::placeholders::_1));
-	gc.setRecvHandler(CameraZoomOut, bind(&MainThread::cameraZoomOut, 
+	gc.setRecvHandler(CameraZoomOut, boost::bind(&MainThread::cameraZoomOut, 
 										 this, std::placeholders::_1));
-	gc.setRecvHandler(CameraCapture, bind(&MainThread::cameraCapture, 
+	gc.setRecvHandler(CameraCapture, boost::bind(&MainThread::cameraCapture, 
 										 this, std::placeholders::_1));
-	gc.setRecvHandler(CameraPower, bind(&MainThread::cameraPower, 
+	gc.setRecvHandler(CameraPower, boost::bind(&MainThread::cameraPower, 
 										 this, std::placeholders::_1));
-	gc.setRecvHandler(CameraDownload, bind(&MainThread::cameraDownload, 
+	gc.setRecvHandler(CameraDownload, boost::bind(&MainThread::cameraDownload, 
 										 this, std::placeholders::_1));
-	gc.setRecvHandler(CompressionMethod, bind(&MainThread::compressionMethod, 
+	gc.setRecvHandler(CompressionMethod, boost::bind(&MainThread::compressionMethod, 
 										 this, std::placeholders::_1));
-	gc.setRecvHandler(ImageDetails, bind(&MainThread::imageDetails, 
+	gc.setRecvHandler(ImageDetails, boost::bind(&MainThread::imageDetails, 
 										 this, std::placeholders::_1));
 	
 	/*
