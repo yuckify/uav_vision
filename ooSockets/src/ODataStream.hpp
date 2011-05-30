@@ -20,12 +20,6 @@ namespace bst = boost;
 
 using namespace std;
 
-namespace dummy {
-	void dummyFunc() {
-		
-	}
-}
-
 //config byte
 //lsb
 //<control packet>
@@ -366,7 +360,7 @@ public:
 	*/
 	void setRecvHandler(PacketType packetId, function< void (OByteArray) > cbk) {
 		while(q_mem->q_handlers.size() <= packetId) 
-			q_mem->q_handlers.push_back(function< void (OByteArray) >()/*bind(&dummy::dummyFunc)*/);
+			q_mem->q_handlers.push_back(function< void (OByteArray) >());
 		
 		q_mem->q_handlers[packetId] = cbk;
 	}
