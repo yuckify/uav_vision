@@ -583,7 +583,9 @@ protected:
 	
 	void writeHigh() {
 //		cout<<"void ODataStream::writeHigh()" <<endl;
-		auto i=q_mem->q_pque.rbegin();
+		
+		vector<ODSOutQueue>::reverse_iterator i = q_mem->q_pque.rbegin();
+//		auto i=q_mem->q_pque.rbegin();
 		//we have found the first queue, check if it contains any chunks of
 		//data to write
 		i->lock();
