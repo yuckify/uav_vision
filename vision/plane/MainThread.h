@@ -6,6 +6,7 @@
 
 #include<boost/thread/mutex.hpp>
 #include<boost/filesystem.hpp>
+#include<boost/scoped_ptr.hpp>
 
 namespace bst = boost;
 
@@ -123,7 +124,7 @@ private:
 	
 	//this is the serial interface to send camera commands to the 
 	//controlling arduino
-	unique_ptr<OSerial> arduino;
+	boost::scoped_ptr<OSerial> arduino;
 	
 	//this is the database where the info for each image is stored
 	ImageDatabase db;
