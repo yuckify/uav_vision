@@ -3,12 +3,11 @@
 
 #include<sys/types.h>
 #include<memory>
+#include<functional>
 
 #include<boost/thread/mutex.hpp>
 #include<boost/filesystem.hpp>
 #include<boost/scoped_ptr.hpp>
-#include<boost/function.hpp>
-#include<boost/bind.hpp>
 
 namespace bst = boost;
 
