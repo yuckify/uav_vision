@@ -584,15 +584,6 @@ protected:
 	void writeHigh() {
 //		cout<<"void ODataStream::writeHigh()" <<endl;
 		
-		//ODataStream<PacketLength,
-//		PacketType, useEndian,
-//		enableConfig, enableSecurity>::vector<>::reverse_iterator
-		
-		/*
-		typename vector< ODataStream<PacketLength,
-			PacketType, useEndian,
-			enableConfig, enableSecurity>::ODSOutQueue >::reverse_iterator i = q_mem->q_pque.rbegin();
-			*/
 		typename vector<ODSOutQueue>::reverse_iterator i = q_mem->q_pque.rbegin();
 		
 //		auto i=q_mem->q_pque.rbegin();
@@ -680,7 +671,8 @@ protected:
 	void writeLow() {
 		//start with the first packetwe looked at last after a call to write
 		//the highest priority packet
-		for(auto i=q_mem->q_pque.rbegin()+1; i<q_mem->q_pque.rend(); i++) {
+		for(typename vector<ODSOutQueue>::reverse_iterator i = 
+			q_mem->q_pque.rbegin()+1; i<q_mem->q_pque.rend(); i++) {
 			i->lock();
 			if(i->hasData()) {
 				//prepare the header for the packet
