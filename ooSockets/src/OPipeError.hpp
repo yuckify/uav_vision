@@ -25,6 +25,7 @@
 #define PIPEERROR_H
 
 #include<ostream>
+#include<errno.h>
 
 #include<OString.hpp>
 
