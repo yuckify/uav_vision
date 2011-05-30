@@ -95,7 +95,7 @@ public:
 	basic_portlist<> filterByType(OO::SerialType type, OO::MatchType match = OO::And) {
 		basic_portlist<> ret;
 		
-		for(auto it=this->begin(); it<this->end(); it++) {
+		for(typename basic_portlist<>::iterator it=this->begin(); it<this->end(); it++) {
 			if(it->type() == type && match == OO::And) {
 				ret.push_back(*it);
 			} else if(it->type() != type && match == OO::Not) {
