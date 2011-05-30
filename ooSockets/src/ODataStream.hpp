@@ -159,7 +159,7 @@ protected:
 		Packet								q_writepacket;
 //		unsigned							q_current;
 		WriteState							q_writeState;
-		function<void ()>					writeFuns[4];
+		function< void () >					writeFuns[4];
 		
 		boost::mutex						q_writetex;
 		
@@ -177,12 +177,12 @@ protected:
 		vector<ODSOutQueue>					q_ique;
 		unsigned							q_packetsize;
 		OTcpSocket							q_sock;
-		function<void ()>					q_disconnect;
+		function< void () >					q_disconnect;
 		//array offset is the id of the packet, value is the function
 		//to be called to handle the data
-		vector< function<void (OByteArray)> >	q_handlers;
+		vector< function< void (OByteArray) > >	q_handlers;
 		
-		vector< function<void (OByteArray)> > q_controlHandlers;
+		vector< function< void (OByteArray) > > q_controlHandlers;
 		
 		//the encryption key for sending secure information
 #ifdef OO_BOTAN
@@ -329,7 +329,7 @@ public:
 #endif
 	
 	void setHandler(PacketType packetId, uint16_t priority, 
-					function<void (OByteArray)> cbk) {
+					function< void (OByteArray) > cbk) {
 		setRecvHandler(packetId, cbk);
 		setSendHandler(packetId, priority);
 	}
@@ -358,7 +358,7 @@ public:
 	 *	@param packetId This is the unique identifier.
 	 *	@param cbk The function to be bound to the unique identifier.
 	*/
-	void setRecvHandler(PacketType packetId, function<void (OByteArray)> cbk) {
+	void setRecvHandler(PacketType packetId, function< void (OByteArray) > cbk) {
 		while(q_mem->q_handlers.size() <= packetId) 
 			q_mem->q_handlers.push_back(NULL);
 		
@@ -371,7 +371,7 @@ public:
 		}
 	}
 	
-	void setDisconnectSig(function<void ()> cbk) {
+	void setDisconnectSig(function< void () > cbk) {
 		q_mem->q_disconnect = cbk;
 	}
 	
