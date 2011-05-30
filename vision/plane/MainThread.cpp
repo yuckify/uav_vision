@@ -62,7 +62,7 @@ MainThread::MainThread() :
 	gc.setSendHandler(ImageDetails, PriorityMed);
 	gc.setDisconnectSig(bind(&MainThread::groundDisconnected, this));
 	//setup the receive handlers
-	/*
+	
 	gc.setRecvHandler(CameraZoomIn, std::bind(&MainThread::cameraZoomIn, 
 										 this, std::placeholders::_1));
 	gc.setRecvHandler(CameraZoomOut, std::bind(&MainThread::cameraZoomOut, 
@@ -77,7 +77,7 @@ MainThread::MainThread() :
 										 this, std::placeholders::_1));
 	gc.setRecvHandler(ImageDetails, std::bind(&MainThread::imageDetails, 
 										 this, std::placeholders::_1));
-	*/
+	
 										 
 	/*
 	
