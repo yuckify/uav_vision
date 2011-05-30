@@ -15,7 +15,7 @@ bool OProperties::isEmpty() const {
 bool OProperties::open(OString fn) {
 	v_fn = fn;
 	fstream file;
-	file.open(fn, ios_base::in);
+	file.open(fn.c_str(), ios_base::in);
 	if(!file.is_open()) return false;
 	
 	OString line;
@@ -30,7 +30,7 @@ bool OProperties::open(OString fn) {
 void OProperties::save(OString fn) {
 	v_fn = fn;
 	fstream file;
-	file.open(fn, ios_base::out);
+	file.open(fn.c_str(), ios_base::out);
 	if(!file.is_open()) return;
 	
 	/*
