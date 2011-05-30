@@ -366,7 +366,7 @@ public:
 	*/
 	void setRecvHandler(PacketType packetId, function< void (OByteArray) > cbk) {
 		while(q_mem->q_handlers.size() <= packetId) 
-			q_mem->q_handlers.push_back(bind(&dummy::dummyFunc));
+			q_mem->q_handlers.push_back(function< void (OByteArray) >()/*bind(&dummy::dummyFunc)*/);
 		
 		q_mem->q_handlers[packetId] = cbk;
 	}
