@@ -588,9 +588,13 @@ protected:
 //		PacketType, useEndian,
 //		enableConfig, enableSecurity>::vector<>::reverse_iterator
 		
+		/*
 		typename vector< ODataStream<PacketLength,
 			PacketType, useEndian,
 			enableConfig, enableSecurity>::ODSOutQueue >::reverse_iterator i = q_mem->q_pque.rbegin();
+			*/
+		typename vector<ODSOutQueue>::reverse_iterator i = q_mem->q_qpue.rbegin();
+		
 //		auto i=q_mem->q_pque.rbegin();
 		//we have found the first queue, check if it contains any chunks of
 		//data to write
