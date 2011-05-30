@@ -35,6 +35,8 @@
 #include<boost/bind.hpp>
 #include<boost/thread/mutex.hpp>
 #include<boost/interprocess/smart_ptr/unique_ptr.hpp>
+#include<boost/scoped_ptr.hpp>
+#include<auto_ptr.h>
 
 namespace bst = boost;
 
@@ -207,7 +209,8 @@ struct OThreadFds {
 #ifdef __windows__
 	DWORD tout;
 #else
-	unique_ptr<timeval> tout;
+	auto_ptr<timeval> tout;
+//	unique_ptr<timeval> tout;
 #endif
 	
 };
@@ -326,7 +329,8 @@ protected:
 	
 	void allocThreadFd();
 	
-	unique_ptr<OThreadFds> fdm;
+	auto_ptr<OThreadFds> fdm;
+//	unique_ptr<OThreadFds> fdm;
 	
 	
 	

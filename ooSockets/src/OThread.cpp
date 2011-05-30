@@ -7,7 +7,8 @@ OThread::OThread() {
 
 OThread::OThread(OThread &other) {
 	thread = other.thread;
-	fdm = (unique_ptr<OThreadFds>&&)other.fdm;
+	fdm = other.fdm;
+//	fdm = (boost::scoped_ptr<OThreadFds>&&)other.fdm;
 }
 
 OThread::OThread(function<void ()> cbk) {
@@ -70,7 +71,7 @@ void OThread::clear() {
 }
 
 bool OThread::execOnce() {
-	if(!fdm) return false;
+	if(!fdm.get()) return false;
 	
 #ifdef __windows__
 	if(fdm->tout == INFINITE && !fdm->readfds.size()) {
@@ -87,7 +88,7 @@ bool OThread::execOnce() {
 	if(fdm->readfds.isEmpty() && 
 	   fdm->writefds.isEmpty() && 
 	   fdm->errorfds.isEmpty() && 
-	   !fdm->tout) {
+	   !fdm->tout.get()) {
 		return false;
 	}
 
@@ -106,7 +107,7 @@ bool OThread::execOnce() {
 #ifdef __windows__
 	if(ret == WAIT_TIMEOUT && fdm->tout != INFINITE) {
 #else
-	if(!ret && fdm->tout) {
+	if(!ret && fdm->tout.get()) {
 #endif
 		//adjust the delta values in the list
 		for(auto i=fdm->deltalist.begin(); 
@@ -217,7 +218,7 @@ bool OThread::execOnce() {
 }
 
 void OThread::allocThreadFd() {
-	if(!fdm) fdm.reset(new OThreadFds);
+	if(!fdm.get()) fdm.reset(new OThreadFds);
 }
 
 void OThread::recalcMinMax(OO::HANDLE fd) {
@@ -360,7 +361,7 @@ void OThread::registerTimer(OTimerBase* tim) {
 #ifdef __windows__
 	fdm->tout = fdm->deltalist[0].timer->period().msec();
 #else
-	if(!fdm->tout) fdm->tout.reset(new timeval);
+	if(!fdm->tout.get()) fdm->tout.reset(new timeval);
 	
 	*fdm->tout = fdm->deltalist[0].timer->period().toTimeval();
 #endif
