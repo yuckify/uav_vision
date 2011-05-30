@@ -771,7 +771,8 @@ protected:
 			i->q_mem->q_que.clear();
 			i->unlock();
 		}
-		for(auto i=q_mem->q_recvBuff.begin(); i<q_mem->q_recvBuff.end(); i++) {
+		for(typename vector<OByteArray>::iterator i = 
+			q_mem->q_recvBuff.begin(); i<q_mem->q_recvBuff.end(); i++) {
 			i->clear();
 		}
 		
