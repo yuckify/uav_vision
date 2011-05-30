@@ -31,8 +31,12 @@
 #include<algorithm>
 #include<memory>
 
+
+#include<boost/bind.hpp>
 #include<boost/thread/mutex.hpp>
 #include<boost/interprocess/smart_ptr/unique_ptr.hpp>
+
+namespace bst = boost;
 
 namespace bip = boost::interprocess;
 
@@ -313,6 +317,10 @@ public:
 	void unregisterTimer(OTimerBase* tim);
 	
 protected:
+	static bool deltaSort(const TimerDelta& a, const TimerDelta& b) {
+		return a.delta < b.delta;
+	}
+	
 	
 	void recalcMinMax(OO::HANDLE fd);
 	

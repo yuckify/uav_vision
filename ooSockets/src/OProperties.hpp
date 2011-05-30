@@ -122,7 +122,7 @@ public:
 	void setMap(map<OString, OString> vals);
 	
 protected:
-	map<OString, OString> values;
+	std::map<OString, OString> values;
 	
 	OString					v_fn;
 	

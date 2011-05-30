@@ -54,46 +54,6 @@
 
 using namespace std;
 
-//swap byte order short
-#define sbos(n) ((((int16_t)(n) & 0xff)<<8)					| \
-				 (((int16_t)(n) & 0xff00)>>8))
-
-//swap byte order unsigned short
-#define sbous(n) ((((uint16_t)(n) & 0xff)<<8)				| \
-				  (((uint16_t)(n) & 0xff00)>>8))
-
-//swap byte order int
-#define sboi(n) ((((int32_t)(n) & 0x000000ff)<<24)			| \
-				 (((int32_t)(n) & 0x0000ff00)<<8)			| \
-				 (((int32_t)(n) & 0x00ff0000)>>8)			| \
-				 (((int32_t)(n) & 0xff000000)>>24))
-
-//swap byte order unsigned int
-#define sboui(n) ((((uint32_t)(n) & 0x000000ff)<<24)		| \
-				  (((uint32_t)(n) & 0x0000ff00)<<8)			| \
-				  (((uint32_t)(n) & 0x00ff0000)>>8)			| \
-				  (((uint32_t)(n) & 0xff000000)>>24))
-
-//swap byte order long int
-#define sboli(n) ((((int64_t)(n) & 0x00000000000000ff)<<56) | \
-				  (((int64_t)(n) & 0x000000000000ff00)<<40) | \
-				  (((int64_t)(n) & 0x0000000000ff0000)<<24) | \
-				  (((int64_t)(n) & 0x00000000ff000000)<<8)	| \
-				  (((int64_t)(n) & 0x000000ff00000000)>>8)	| \
-				  (((int64_t)(n) & 0x0000ff0000000000)>>24) | \
-				  (((int64_t)(n) & 0x00ff000000000000)>>40) | \
-				  (((int64_t)(n) & 0xff00000000000000)>>56))
-
-//swap byte order unsigned long int
-#define sbouli(n) ((((uint64_t)(n) & 0x00000000000000ff)<<56) | \
-				   (((uint64_t)(n) & 0x000000000000ff00)<<40) | \
-				   (((uint64_t)(n) & 0x0000000000ff0000)<<24) | \
-				   (((uint64_t)(n) & 0x00000000ff000000)<<8)  | \
-				   (((uint64_t)(n) & 0x000000ff00000000)>>8)  | \
-				   (((uint64_t)(n) & 0x0000ff0000000000)>>24) | \
-				   (((uint64_t)(n) & 0x00ff000000000000)>>40) | \
-				   (((uint64_t)(n) & 0xff00000000000000)>>56))
-
 class OByteArray;
 
 /**	This is a simple class that allows the OByteArray class to intrusively 
@@ -274,10 +234,12 @@ public:
 		uint32_t length = ma.size();
 		arr.write(length);
 		
-		for_each(ma.begin(), ma.end(), [&arr] (const std::pair<T, U>& pa) {
+		for(int i=0; i<ma.size(); i++) {
+			const std::pair<T, U>& pa = ma.begin()+i;
 			arr.write((T&)pa.first);
 			arr.write((U&)pa.second);
-		});
+		}
+		
 	}
 	
 	/**	This function writes a piece of data at the current position
@@ -672,6 +634,60 @@ protected:
 	*/
 //	void advanceSize(int addition);
 	
+	//swap byte order short
+	inline int16_t sbos(int16_t n) {
+		return	((n & 0xff)<<8) |
+				 ((n & 0xff00)>>8);
+	}
+	
+	
+	
+	//swap byte order unsigned short
+	inline uint16_t sbous(uint16_t n) {
+		return	((n & 0xff)<<8) |
+				 ((n & 0xff00)>>8);
+	}
+	
+	//swap byte order int
+	inline int32_t sboi(int32_t n) {
+		return ((n & 0x000000ff)<<24)	|
+				((n & 0x0000ff00)<<8)	|
+				((n & 0x00ff0000)>>8)	|
+				((n & 0xff000000)>>24);
+	}
+	
+	//swap byte order unsigned int
+	inline uint32_t sboui(uint32_t n) {
+		return ((n & 0x000000ff)<<24)	|
+				((n & 0x0000ff00)<<8)	|
+				((n & 0x00ff0000)>>8)	|
+				((n & 0xff000000)>>24);
+	}
+	
+	//swap byte order long int
+	inline int64_t sboli(int64_t n) {
+		return (((n & 0x00000000000000ffLL)<<56) |
+				((n & 0x000000000000ff00LL)<<40) |
+				((n & 0x0000000000ff0000LL)<<24) |
+				((n & 0x00000000ff000000LL)<<8)	|
+				((n & 0x000000ff00000000LL)>>8)	|
+				((n & 0x0000ff0000000000LL)>>24) |
+				((n & 0x00ff000000000000LL)>>40) |
+				((n & 0xff00000000000000LL)>>56));
+	}
+	
+	//swap byte order unsigned long int
+	inline uint64_t sbouli(uint64_t n) {
+		return (((n & 0x00000000000000ffULL)<<56) |
+				((n & 0x000000000000ff00ULL)<<40) |
+				((n & 0x0000000000ff0000ULL)<<24) |
+				((n & 0x00000000ff000000ULL)<<8)	|
+				((n & 0x000000ff00000000ULL)>>8)	|
+				((n & 0x0000ff0000000000ULL)>>24) |
+				((n & 0x00ff000000000000ULL)>>40) |
+				((n & 0xff00000000000000ULL)>>56));
+	}
+	
 #if defined(__LITTLE_ENDIAN__)	|| \
 	defined(i686)				|| \
 	defined(__i686)				|| \
@@ -681,86 +697,86 @@ protected:
 	defined(__i386__)
 	
 	//host byte ordering to little endian
-	int16_t htole(int16_t i) { return i; }
-	uint16_t htole(uint16_t i) { return i; }
+	inline int16_t htole(int16_t i) { return i; }
+	inline uint16_t htole(uint16_t i) { return i; }
 	
-	int32_t htole(int32_t i) { return i; }
-	uint32_t htole(uint32_t i) { return i; }
+	inline int32_t htole(int32_t i) { return i; }
+	inline uint32_t htole(uint32_t i) { return i; }
 	
-	int64_t htole(int64_t i) { return i; }
-	uint64_t htole(uint64_t i) { return i; }
+	inline int64_t htole(int64_t i) { return i; }
+	inline uint64_t htole(uint64_t i) { return i; }
 	
 	//host byte ordering to big endian
-	int16_t htobe(int16_t i) { return sbos(i); }
-	uint16_t htobe(uint16_t i) { return sbous(i); }
+	inline int16_t htobe(int16_t i) { return sbos(i); }
+	inline uint16_t htobe(uint16_t i) { return sbous(i); }
 	
-	int32_t htobe(int32_t i) { return sboi(i); }
-	uint32_t htobe(uint32_t i) { return sboui(i); }
+	inline int32_t htobe(int32_t i) { return sboi(i); }
+	inline uint32_t htobe(uint32_t i) { return sboui(i); }
 	
-	int64_t htobe(int64_t i) { return sboli(i); }
-	uint64_t htobe(uint64_t i) { return sbouli(i); }
+	inline int64_t htobe(int64_t i) { return sboli(i); }
+	inline uint64_t htobe(uint64_t i) { return sbouli(i); }
 	
 	//little endian to host byte ordering
-	int16_t letoh(int16_t i) { return i; }
-	uint16_t letoh(uint16_t i) { return i; }
+	inline int16_t letoh(int16_t i) { return i; }
+	inline uint16_t letoh(uint16_t i) { return i; }
 	
-	int32_t letoh(int32_t i) { return i; }
-	uint32_t letoh(uint32_t i) { return i; }
+	inline int32_t letoh(int32_t i) { return i; }
+	inline uint32_t letoh(uint32_t i) { return i; }
 	
-	int64_t letoh(int64_t i) { return i; }
-	uint64_t letoh(uint64_t i) { return i; }
+	inline int64_t letoh(int64_t i) { return i; }
+	inline uint64_t letoh(uint64_t i) { return i; }
 	
 	//big endian to host byte ordering
-	int16_t betoh(int16_t i) { return sbos(i); }
-	uint16_t betoh(uint16_t i) { return sbous(i); }
+	inline int16_t betoh(int16_t i) { return sbos(i); }
+	inline uint16_t betoh(uint16_t i) { return sbous(i); }
 	
-	int32_t betoh(int32_t i) { return sboi(i); }
-	uint32_t betoh(uint32_t i) { return sboui(i); }
+	inline int32_t betoh(int32_t i) { return sboi(i); }
+	inline uint32_t betoh(uint32_t i) { return sboui(i); }
 	
-	int64_t betoh(int64_t i) { return sboli(i); }
-	uint64_t betoh(uint64_t i) { return sbouli(i); }
+	inline int64_t betoh(int64_t i) { return sboli(i); }
+	inline uint64_t betoh(uint64_t i) { return sbouli(i); }
 	
 #else
 	
 	//host byte ordering to little endian
-	int16_t htole(int16_t i) { return sbos(i); }
-	uint16_t htole(uint16_t i) { return sbous(i); }
+	inline int16_t htole(int16_t i) { return sbos(i); }
+	inline uint16_t htole(uint16_t i) { return sbous(i); }
 	
-	int32_t htole(int32_t i) { return sboi(i); }
-	uint32_t htole(uint32_t i) { return sboui(i); }
+	inline int32_t htole(int32_t i) { return sboi(i); }
+	inline uint32_t htole(uint32_t i) { return sboui(i); }
 	
-	int64_t htole(int64_t i) { return sboli(i); }
-	uint64_t htole(uint64_t i) { return sbouli(i); }
+	inline int64_t htole(int64_t i) { return sboli(i); }
+	inline uint64_t htole(uint64_t i) { return sbouli(i); }
 	
 	//host byte ordering to big endian
-	int16_t htobe(int16_t i) { return i; }
-	uint16_t htobe(uint16_t i) { return i; }
+	inline int16_t htobe(int16_t i) { return i; }
+	inline uint16_t htobe(uint16_t i) { return i; }
 	
-	int32_t htobe(int32_t i) { return i; }
-	uint32_t htobe(uint32_t i) { return i; }
+	inline int32_t htobe(int32_t i) { return i; }
+	inline uint32_t htobe(uint32_t i) { return i; }
 	
-	int64_t htobe(int64_t i) { return i; }
-	uint64_t htobe(uint64_t i) { return i; }
+	inline int64_t htobe(int64_t i) { return i; }
+	inline uint64_t htobe(uint64_t i) { return i; }
 	
 	//little endian to host byte ordering
-	int16_t letoh(int16_t i) { return sbos(i); }
-	uint16_t letoh(uint16_t i) { return sbous(i); }
+	inline int16_t letoh(int16_t i) { return sbos(i); }
+	inline uint16_t letoh(uint16_t i) { return sbous(i); }
 	
-	int32_t letoh(int32_t i) { return sboi(i); }
-	uint32_t letoh(uint32_t i) { return sboui(i); }
+	inline int32_t letoh(int32_t i) { return sboi(i); }
+	inline uint32_t letoh(uint32_t i) { return sboui(i); }
 	
-	int64_t letoh(int64_t i) { return sboli(i); }
-	uint64_t letoh(uint64_t i) { return sbouli(i); }
+	inline int64_t letoh(int64_t i) { return sboli(i); }
+	inline uint64_t letoh(uint64_t i) { return sbouli(i); }
 	
 	//big endian to host byte ordering
-	int16_t betoh(int16_t i) { return i; }
-	uint16_t betoh(uint16_t i) { return i; }
+	inline int16_t betoh(int16_t i) { return i; }
+	inline uint16_t betoh(uint16_t i) { return i; }
 	
-	int32_t betoh(int32_t i) { return i; }
-	uint32_t betoh(uint32_t i) { return i; }
+	inline int32_t betoh(int32_t i) { return i; }
+	inline uint32_t betoh(uint32_t i) { return i; }
 	
-	int64_t v(int64_t i) { return i; }
-	uint64_t betoh(uint64_t i) { return i; }
+	inline int64_t v(int64_t i) { return i; }
+	inline uint64_t betoh(uint64_t i) { return i; }
 	
 #endif
 	

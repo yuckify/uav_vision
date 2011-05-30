@@ -70,8 +70,8 @@ public:
 	/// adapters.
 	OString name() const;
 	
-	/// This is the system dependant name of the serial which is
-	/// used internally to open the serial port.
+	/// This is the system dependant name of the serial device which is
+	/// used internally to open the port.
 	OString hwName() const;
 	
 	/// This parameter is used only on Linux to distinguish between
@@ -127,11 +127,28 @@ public:
 	  *		for the error code and strError() for the string 
 	  *		representation.
 	 */
-	void open(OO::SerialSpeed	speed	= OO::O9600, 
-			  const OPort&		port	= OPort(), 
-			  int				opts	= OO::DefaultOpts);
+	void open(const OPort& port = OPort());
+	
+	bool isOpen() const;
 	
 	void close();
+	
+	OO::SerialSpeed speed() const;
+	void setSpeed(OO::SerialSpeed opt);
+	
+	OO::SerialCS charSize() const;
+	void setCharSize(OO::SerialCS size);
+	
+	int stopBits() const;
+	void setStopBits(int n);
+	
+	OO::SerialParity parity() const;
+	void setParity(OO::SerialParity p);
+	
+	OO::SerialFlow flowControl() const;
+	void setFlowControl(OO::SerialFlow fc);
+	
+	
 	
 	/**	Read data from the serial port.
 	  *	@param data This is where the data will be stored.
@@ -172,7 +189,7 @@ public:
 	OString strError();
 	
 	///	Set the callback that will be called when data is available.
-	void readyReadFunc(function<void ()> cbk);
+	void readFunc(function<void ()> cbk);
 	
 	/// Set the callback that will be called when an error is generated.
 	void errorFunc(function<void (OSerialError)> cbk);
@@ -185,7 +202,7 @@ public:
 	  *		be available. When data becomes available the
 	  *		readyRead callback will be called.
 	 */
-	void waitForReadyRead(int msec);
+	void waitForRead(int msec);
 	
 	OSerial& operator=(OSerial& other);
 	
@@ -233,6 +250,13 @@ protected:
 		if(errorCbk) errorCbk(e);
 	}
 	
+#ifdef _windows_
+	
+#else
+	termios term;
+#endif
+	
+	
 	//this callback is called when data is available
 	function<void ()> readyReadCbk;
 	void sigReadyRead() {
@@ -251,8 +275,6 @@ protected:
 	
 	//the file descriptor that points to the file
 	OO::HANDLE fdes;
-	
-	bool fdreg;
 	
 };
 

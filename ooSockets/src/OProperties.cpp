@@ -33,10 +33,17 @@ void OProperties::save(OString fn) {
 	file.open(fn, ios_base::out);
 	if(!file.is_open()) return;
 	
+	/*
 	for_each(values.begin(), values.end(),
 			 [&file] (pair<OString, OString> p) -> void {
 		file<<p.first <<"=" <<p.second <<endl;
 	});
+	*/
+	
+	std::map<OString, OString>::const_iterator it;
+	for(it = values.begin(); it!=values.end(); it++) {
+		file<<it->first <<"=" <<it->second <<endl;
+	}
 	
 	file.close();
 }

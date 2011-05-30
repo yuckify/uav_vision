@@ -28,8 +28,9 @@ MainThread::MainThread() :
 //		::exit(0);
 	} else {
 		cout<<"name: " <<ports[0].hwName() <<endl;
-		initserial.readyReadFunc(bind(&MainThread::initSerialRead, this));
-		initserial.open(OO::O115200, ports[0], OO::DefaultOpts | OO::NonBlock);
+		initserial.readFunc(bind(&MainThread::initSerialRead, this));
+		initserial.setSpeed(OO::O115200);
+		initserial.open(ports[0]);
 	}
 	
 	add_capture = false;
@@ -47,11 +48,11 @@ MainThread::MainThread() :
 	//setup the socket to send multicast packets to
 	//discovert the groundstation
 	multping = new OUdpSocket(this);
-	multping->errorFunc(bind(&MainThread::multError, this, _1));
+	multping->errorFunc(bind(&MainThread::multError, this, std::placeholders::_1));
 	multping->sendMulticast(25000, "225.0.0.37");
 	
 	serv = new OTcpServer(this);
-	serv->incommingFunc(bind(&MainThread::incommingConnection, this, _1));
+	serv->incommingFunc(bind(&MainThread::incommingConnection, this, std::placeholders::_1));
 	serv->listen(25001);
 	
 	//**************************************************
@@ -60,14 +61,23 @@ MainThread::MainThread() :
 	gc.setSendHandler(VideoFrame, PriorityHigh);
 	gc.setSendHandler(ImageDetails, PriorityMed);
 	gc.setDisconnectSig(bind(&MainThread::groundDisconnected, this));
+	//setup the receive handlers
+	gc.setRecvHandler(CameraZoomIn, bind(&MainThread::cameraZoomIn, 
+										 this, std::placeholders::_1));
+	gc.setRecvHandler(CameraZoomOut, bind(&MainThread::cameraZoomOut, 
+										 this, std::placeholders::_1));
+	gc.setRecvHandler(CameraCapture, bind(&MainThread::cameraCapture, 
+										 this, std::placeholders::_1));
+	gc.setRecvHandler(CameraPower, bind(&MainThread::cameraPower, 
+										 this, std::placeholders::_1));
+	gc.setRecvHandler(CameraDownload, bind(&MainThread::cameraDownload, 
+										 this, std::placeholders::_1));
+	gc.setRecvHandler(CompressionMethod, bind(&MainThread::compressionMethod, 
+										 this, std::placeholders::_1));
+	gc.setRecvHandler(ImageDetails, bind(&MainThread::imageDetails, 
+										 this, std::placeholders::_1));
 	
-	gc.setRecvHandler(ImageDetails, [](OByteArray data)->void{
-		cout<<"ImageDetails" <<endl;
-	});
-	
-	gc.setRecvHandler(CompressionMethod, [](OByteArray data)->void{
-		cout<<"CompessionMethod" <<endl;
-	});
+	/*
 	
 	gc.setRecvHandler(CameraZoomIn, [](OByteArray data)->void{
 		cout<<"CameraZoomIn" <<endl;
@@ -100,6 +110,7 @@ MainThread::MainThread() :
 		cout<<"ImageDetails" <<endl;
 		this->writeImageDb();
 	});
+	*/
 	//**************************************************
 	//
 	//**************************************************
@@ -118,6 +129,37 @@ MainThread::MainThread() :
 	//to control the camera
 	arduino.reset(new OSerial());
 	
+}
+
+void MainThread::compressionMethod(OByteArray data) {
+	cout<<"CompressionMethod" <<endl;
+	OString comp;
+	data>>comp;
+	vthread->setCompression(comp);
+}
+
+void MainThread::cameraZoomIn(OByteArray data) {
+	cout<<"CameraZoomIn" <<endl;
+}
+
+void MainThread::cameraZoomOut(OByteArray data) {
+	cout<<"CameraZoomOut" <<endl;
+}
+
+void MainThread::cameraCapture(OByteArray data) {
+	cout<<"CameraCapture" <<endl;
+}
+void MainThread::cameraPower(OByteArray data) {
+	cout<<"CameraPower" <<endl;
+}
+
+void MainThread::cameraDownload(OByteArray data) {
+	cout<<"CameraDownload" <<endl;
+}
+
+void MainThread::imageDetails(OByteArray data) {
+	cout<<"ImageDetails" <<endl;
+	this->writeImageDb();
 }
 
 void MainThread::multTimeout() {
@@ -234,7 +276,7 @@ void MainThread::initSerialRead() {
 		initserial.write(msg);
 		
 		camcontrol = initserial;
-		camcontrol.readyReadFunc(bind(&MainThread::camControlRead, this));
+		camcontrol.readFunc(bind(&MainThread::camControlRead, this));
 		camcontrol.parent(this);
 	}
 	

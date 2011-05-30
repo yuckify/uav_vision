@@ -34,7 +34,9 @@ namespace bst = boost;
 #define IMAGEDIR	DBPATH"/images"
 
 namespace bfs = boost::filesystem;
+using namespace std::placeholders;
 
+using namespace std::placeholders;
 using namespace std;
 
 void DebugMsg(OString str);
@@ -77,6 +79,14 @@ private:
 	
 	ODataStream<> gc;
 	
+	//callback methods for networking
+	void imageDetails(OByteArray data);
+	void compressionMethod(OByteArray data);
+	void cameraZoomIn(OByteArray data);
+	void cameraZoomOut(OByteArray data);
+	void cameraCapture(OByteArray data);
+	void cameraPower(OByteArray data);
+	void cameraDownload(OByteArray data);
 	
 	//this structure and these functions are for packet switching
 	OList<void (*)(OByteArray&)> switcher;

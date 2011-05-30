@@ -34,8 +34,10 @@ macx {
 
 }
 linux-g++ {
-	QMAKE_CXX = g++-4.5
-	LIBS += -lboost_thread-mt `pkg-config --libs opencv`
+#	QMAKE_CXX = arm-linux-gnueabi-g++-4.5
+#	QMAKE_CXX = g++-4.4
+	LIBS += -lboost_thread #`pkg-config --libs opencv`
+	PKGCONFIG += /usr/local/lib/pkgconfig/opencv.pc
 }
 QMAKE_CXXFLAGS = -std=c++0x -O3
 INCLUDEPATH += ../../ooSockets/src \
@@ -77,7 +79,8 @@ SOURCES += main.cpp \
     ../../ooSockets/src/OTime.cpp \
     ../../ooSockets/src/OCompatibility.cpp \
     ../../ooSockets/src/ODSMux.cpp \
-    ../../ooSockets/src/ODataStream.cpp
+    ../../ooSockets/src/ODataStream.cpp \
+    ../../ooSockets/src/OTerminal.cpp
 HEADERS += MainThread.h \
     VideoThread.h \
     ../../ooSockets/src/OVersion.hpp \
@@ -109,7 +112,8 @@ HEADERS += MainThread.h \
     ../../ooSockets/src/OTime.hpp \
     ../../ooSockets/src/OCompatibility.hpp \
     ../../ooSockets/src/ODSMux.h \
-    ../../ooSockets/src/ODataStream.hpp
+    ../../ooSockets/src/ODataStream.hpp \
+    ../../ooSockets/src/OTerminal.h
 
 OTHER_FILES += \
     ../plane-build-desktop/Makefile \

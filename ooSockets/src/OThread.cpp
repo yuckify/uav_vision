@@ -134,10 +134,13 @@ bool OThread::execOnce() {
 			}
 			
 			//resort the delta list
+			/*
 			sort(fdm->deltalist.begin(), fdm->deltalist.end(),
 				 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
 				return a.delta < b.delta;
 			});
+			*/
+			sort(fdm->deltalist.begin(), fdm->deltalist.end(), boost::bind(deltaSort, _1, _2));
 			
 			if(fdm->deltalist.size()) {
 				if(fdm->deltalist[0].delta <= 0)
@@ -346,10 +349,13 @@ void OThread::registerTimer(OTimerBase* tim) {
 	fdm->deltalist.push_back(TimerDelta(tim));
 	
 	//sort the list according to the timeout period
+	/*
 	sort(fdm->deltalist.begin(), fdm->deltalist.end(), 
 		 [] (const TimerDelta& a, const TimerDelta& b) -> bool {
 		return a.delta < b.delta;
 	});
+	*/
+	sort(fdm->deltalist.begin(), fdm->deltalist.end(), deltaSort);
 	
 #ifdef __windows__
 	fdm->tout = fdm->deltalist[0].timer->period().msec();

@@ -58,7 +58,18 @@ OSerial::OSerial(OThread* parent) {
 	
 	serialerr = 0;
 	fdes = 0;
-	fdreg = false;
+	
+	//setup the default options for the serial port
+#ifdef __windows__
+	
+#else
+	bzero(&term, sizeof(term));
+	
+	term.c_cflag = OO::Char8 | CREAD | CLOCAL;
+	
+	term.c_cc[VMIN]     = 1;     // blocking read until 1 character arrives 
+	
+#endif
 }
 
 OSerial::~OSerial() {
@@ -74,12 +85,20 @@ OPortList OSerial::portList() {
 	fs::directory_iterator begin(files);
 	fs::directory_iterator end;
 	
+	/*
 	for_each(begin, end,
 			 [&availports] (fs::directory_entry& p) -> void {
 		OString path = p.path().string();
 		path = path.substring(path.find_last_of("/")+1);
 		availports.push_back(path);
 	});
+	*/
+	
+	for(fs::directory_iterator it=begin; it!=end; it++) {
+		OString path = it->path().string();
+		path = path.substring(path.find_last_of("/")+1);
+		availports.push_back(path);
+	}
 	
 #ifdef __linux__
 	boost::regex hwports("ttyS([0-9]+)");
@@ -137,9 +156,7 @@ OPortList OSerial::portList() {
 	return ret;
 }
 
-void OSerial::open(OO::SerialSpeed speed, 
-				   const OPort &port, 
-				   int opts) {
+void OSerial::open(const OPort &port) {
 	errno = 0;
 	
 	i_port = port;
@@ -200,50 +217,8 @@ void OSerial::open(OO::SerialSpeed speed,
 
 
 #else
-	struct termios settings;
 	
-	if(::tcgetattr(fdes, &settings) == -1) {
-		sigError();
-		return;
-	}
-	
-	::memset(&settings, 0, sizeof(settings));
-	
-//	settings.c_cflag = speed /*| CRTSCTS */| CS8 | CLOCAL | CREAD;
-//	settings.c_iflag = IGNPAR;// | IGNCR;// | IXOFF | ICRNL;
-//	settings.c_oflag = 0;
-//	settings.c_lflag = 0;//ICANON;
-	
-	//arduino settings
-	//	settings.c_iflag =  |  |  |  |  |  |  |  | 
-//		 |  |  | ECHOCTL | ECHOKE |  | IXON;
-	
-	settings.c_cflag = CS8 | CREAD | CLOCAL | (int)speed;
-	settings.c_iflag = 0;//IGNBRK | BRKINT | ICRNL | IXON;
-	settings.c_oflag = 0;//OPOST | ONLCR;
-	settings.c_lflag = 0;//ISIG | ICANON | IEXTEN | NOFLSH;// | ECHO | ECHOE | ECHOK;
-	
-	settings.c_cc[VINTR]    = 0;     /* Ctrl-c */ 
-	settings.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
-	settings.c_cc[VERASE]   = 0;     /* del */
-	settings.c_cc[VKILL]    = 0;     /* @ */
-	settings.c_cc[VEOF]     = 0;     /* Ctrl-d */
-	settings.c_cc[VTIME]    = 0;     /* inter-character timer unused */
-	settings.c_cc[VMIN]     = 1;     /* blocking read until 1 character arrives */
-#ifndef __apple__
-	settings.c_cc[VSWTC]    = 0;     /* '\0' */
-#endif
-	settings.c_cc[VSTART]   = 0;     /* Ctrl-q */ 
-	settings.c_cc[VSTOP]    = 0;     /* Ctrl-s */
-	settings.c_cc[VSUSP]    = 0;     /* Ctrl-z */
-	settings.c_cc[VEOL]     = 0;     /* '\0' */
-	settings.c_cc[VREPRINT] = 0;     /* Ctrl-r */
-	settings.c_cc[VDISCARD] = 0;     /* Ctrl-u */
-	settings.c_cc[VWERASE]  = 0;     /* Ctrl-w */
-	settings.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
-	settings.c_cc[VEOL2]    = 0;     /* '\0' */
-	
-	if(::tcsetattr(fdes, TCSANOW, &settings) == -1) {
+	if(::tcsetattr(fdes, TCSANOW, &term) == -1) {
 		sigError();
 		return;
 	}
@@ -281,8 +256,146 @@ OByteArray OSerial::read(int len) {
 	return ba;
 }
 
+bool OSerial::isOpen() const {
+	return fdes > 0;
+}
+
 void OSerial::close() {
 	::close(fdes);
+}
+
+OO::SerialSpeed OSerial::speed() const {
+#ifdef _windows_
+	
+#else
+	return (OO::SerialSpeed)cfgetospeed(&term);
+#endif
+}
+
+void OSerial::setSpeed(OO::SerialSpeed opt) {
+#ifdef _windows_
+	
+#else
+	//set the speed
+	cfsetospeed(&term, opt);
+	cfsetispeed(&term, opt);
+	
+	//update the port
+	if(fdes)
+		tcsetattr(fdes, TCSANOW, &term);
+#endif
+}
+
+OO::SerialCS OSerial::charSize() const {
+#ifdef _windows_
+	
+#else
+	return OO::SerialCS(CSIZE & term.c_cflag);
+#endif
+}
+
+void OSerial::setCharSize(OO::SerialCS size) {
+#ifdef _windows_
+	
+#else	
+	term.c_cflag &= ~CSIZE;//clear the current speed
+	term.c_cflag |= size;//set the new speed
+	
+	//update the port
+	if(fdes)
+		tcsetattr(fdes, TCSANOW, &term);
+#endif
+}
+
+int OSerial::stopBits() const {
+#ifdef _windows_
+	
+#else
+	if(term.c_cflag & CSTOPB)
+		return 2;
+	
+	return 1;
+#endif
+}
+
+void OSerial::setStopBits(int n) {
+#ifdef _windows_
+	
+#else
+	if(n == 2)
+		term.c_cflag |= CSTOPB;//2 stop bits
+	else
+		term.c_cflag &= ~CSTOPB;//1 stop bit
+	
+	if(fdes)
+		tcsetattr(fdes, TCSANOW, &term);
+#endif
+}
+
+OO::SerialParity OSerial::parity() const {
+#ifdef _windows_
+	
+#else
+	if(term.c_cflag & PARENB) {
+		return OO::SerialParity(term.c_cflag & OO::Odd);
+	}
+	
+	//parity set to off
+	return OO::NoParity;
+#endif
+}
+
+void OSerial::setParity(OO::SerialParity p) {
+#ifdef _windows_
+	
+#else
+	switch(p) {
+		case OO::Even: {
+			term.c_cflag |= PARENB;
+			term.c_cflag &= ~OO::Odd;
+			break;
+		}
+		case OO::Odd: {
+			term.c_cflag |= PARENB;
+			term.c_cflag |= OO::Odd;
+			break;
+		}
+		case OO::NoParity: {
+			term.c_cflag &= ~PARENB;
+			break;
+		}
+	}
+	
+	if(fdes)
+		tcsetattr(fdes, TCSANOW, &term);
+#endif
+}
+
+OO::SerialFlow OSerial::flowControl() const {
+#ifdef _windows_
+	
+#else
+	if(term.c_iflag & IXON) return OO::HardwareFlow;
+	
+	return OO::NoFlow;
+#endif
+}
+
+void OSerial::setFlowControl(OO::SerialFlow fc) {
+#ifdef _windows_
+	
+#else
+	if(fc == OO::HardwareFlow) {
+		term.c_iflag |= IXON;
+		term.c_iflag |= IXOFF;
+	} else {
+		term.c_iflag &= ~IXON;
+		term.c_iflag &= ~IXOFF;
+	}
+	
+	if(fdes)
+		tcsetattr(fdes, TCSANOW, &term);
+#endif
 }
 
 OByteArray OSerial::readAll() {
@@ -328,7 +441,7 @@ OString OSerial::strError() {
 	return serialerr.string();
 }
 
-void OSerial::readyReadFunc(function<void ()> cbk) {
+void OSerial::readFunc(function<void ()> cbk) {
 	readyReadCbk = cbk;
 }
 
@@ -353,7 +466,7 @@ int OSerial::available() {
 	return sum;
 }
 
-void OSerial::waitForReadyRead(int msec) {
+void OSerial::waitForRead(int msec) {
 	timeval tmpt;
 	tmpt.tv_sec = msec / 1000;
 	tmpt.tv_usec = (msec % 1000) * 1000;
@@ -373,7 +486,6 @@ void OSerial::waitForReadyRead(int msec) {
 
 OSerial& OSerial::operator =(OSerial& other) {
 	//copy over all the variables
-	fdreg = other.fdreg;
 	fdes = other.fdes;
 	par = other.par;
 	
@@ -388,7 +500,6 @@ OSerial& OSerial::operator =(OSerial& other) {
 	
 	//have to clear the old serial object to make sure
 	//it does not mess with the file descriptor
-	other.fdreg = false;
 	other.fdes = NULL;
 	other.par = NULL;
 	other.readyReadCbk = NULL;
@@ -422,15 +533,13 @@ void OSerial::priorityLoop() {
 }
 
 void OSerial::registerFD() {
-	if(!fdreg && par) {
+	if(par) {
 		par->registerReadFD(fdes, this);
-		fdreg = true;
 	}
 }
 
 void OSerial::unregisterFD() {
-	if(fdreg) {
+	if(par) {
 		par->unregisterReadFD(fdes);
-		fdreg = false;
 	}
 }
