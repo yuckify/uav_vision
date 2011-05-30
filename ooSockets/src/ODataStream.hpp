@@ -765,7 +765,8 @@ protected:
 		//clear all the buffers
 		q_mem->q_readhead = true;
 		q_mem->q_head.clear();
-		for(auto i=q_mem->q_pque.begin(); i<q_mem->q_pque.end(); i++) {
+		for(typename vector<ODSOutQueue>::iterator i = 
+			q_mem->q_pque.begin(); i<q_mem->q_pque.end(); i++) {
 			i->lock();
 			i->q_mem->q_que.clear();
 			i->unlock();
