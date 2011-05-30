@@ -180,9 +180,9 @@ protected:
 		function<void ()>					q_disconnect;
 		//array offset is the id of the packet, value is the function
 		//to be called to handle the data
-		vector<function<void (OByteArray)>>	q_handlers;
+		vector< function<void (OByteArray)> >	q_handlers;
 		
-		vector<function<void (OByteArray)>> q_controlHandlers;
+		vector< function<void (OByteArray)> > q_controlHandlers;
 		
 		//the encryption key for sending secure information
 #ifdef OO_BOTAN
