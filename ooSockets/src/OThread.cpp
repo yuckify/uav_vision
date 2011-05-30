@@ -110,7 +110,7 @@ bool OThread::execOnce() {
 	if(!ret && fdm->tout.get()) {
 #endif
 		//adjust the delta values in the list
-		for(auto i=fdm->deltalist.begin(); 
+		for(typename OList<TimerDelta>::iterator i=fdm->deltalist.begin(); 
 		i<fdm->deltalist.end(); i++) {
 			i->delta -= fdm->deltalist[0].delta;
 		}
