@@ -367,7 +367,7 @@ OAddressList OSocket::getAddressInfo(OString addr,
 	addrinfo* servinfo = 0;
 	addrinfo * p;
 	
-	unique_ptr<addrinfo> tmp(NULL);
+	boost::scoped_ptr<addrinfo> tmp(NULL);
 	if(!hints.isEmpty()) {
 		tmp.reset(new addrinfo);
 		::memset(tmp.get(), 0, sizeof(addrinfo));
