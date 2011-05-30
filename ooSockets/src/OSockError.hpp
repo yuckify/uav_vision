@@ -26,6 +26,7 @@
 
 #include<fcntl.h>
 #include<ostream>
+#include<errno.h>
 
 #include"OString.hpp"
 
