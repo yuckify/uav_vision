@@ -775,7 +775,7 @@ protected:
 	inline int32_t betoh(int32_t i) { return i; }
 	inline uint32_t betoh(uint32_t i) { return i; }
 	
-	inline int64_t v(int64_t i) { return i; }
+	inline int64_t betoh(int64_t i) { return i; }
 	inline uint64_t betoh(uint64_t i) { return i; }
 	
 #endif
