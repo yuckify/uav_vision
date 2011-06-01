@@ -482,9 +482,9 @@ protected:
 				
 				cout<<"read:"  <<q_mem->q_head.size() <<endl;
 				
-//				for(int i=0; i<q_mem->q_head.size(); i++) {
-//					cout<<(int)q_mem->q_head.data()[i] <<" ";
-//				} cout<<endl;
+				for(int i=0; i<q_mem->q_head.size(); i++) {
+					cout<<(int)q_mem->q_head.data()[i] <<" ";
+				} cout<<endl;
 				
 				cout<<"avail: " <<q_mem->q_sock.available() <<endl;
 				
@@ -600,9 +600,9 @@ protected:
 			length = data.size() + head.size() - sizeof(PacketLength);
 			head<<length;
 			
-//			for(int i=0; i<head.size(); i++) {
-//				cout<<(int)head.data()[i] <<" ";
-//			} cout<<endl;
+			for(int i=0; i<head.size(); i++) {
+				cout<<(int)head.data()[i] <<" ";
+			} cout<<endl;
 			
 			cout<<"l: " <<length <<" c: " <<(int)config <<" t: " <<(int)type <<endl;
 //			cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
