@@ -24,7 +24,7 @@ void VideoThread::run() {
 	p[2] = 0;
 	
 	while(1) {
-		if(1) {
+		if(0) {
 //		if(!stream->socket().connected()) {
 			usleep(100000);
 			continue;
