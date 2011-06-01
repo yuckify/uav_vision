@@ -41,6 +41,7 @@ void VideoThread::run() {
 		comptex.lock();
 		CvMat* temp;
 		
+		cout<<"before encode" <<endl;
 		//if the new compression method fails, reset to jpeg
 		try {
 			temp = cvEncodeImage(compext.toCString(), frame, p); //Encode image as Jpeg
