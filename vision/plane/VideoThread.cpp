@@ -37,11 +37,9 @@ void VideoThread::run() {
 			break;
 		}
 		
-		cout<<"before lock" <<endl;
 		comptex.lock();
 		CvMat* temp;
 		
-		cout<<"before encode" <<endl;
 		//if the new compression method fails, reset to jpeg
 		try {
 			temp = cvEncodeImage(compext.toCString(), frame, p); //Encode image as Jpeg
@@ -59,15 +57,10 @@ void VideoThread::run() {
 		comptex.unlock();
 		
 		
-		usleep(500000);
-		cout<<"temp: " <<temp->rows <<" " <<temp->cols <<endl;
-//		exit(0);
-		
 		//write the frame to the data stream
 		if(stream->socket().connected()) {
 			OByteArray data;
 			data<<temp;
-			cout<<"write size: " <<data.size() <<endl;
 			stream->write(VideoFrame, data);
 		}
 		cvReleaseMat(&temp);

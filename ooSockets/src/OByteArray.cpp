@@ -235,16 +235,9 @@ using namespace std;
 
 void OByteArray::write(uint32_t i) {
 	if(mem->writting) {
-		
-		uint32_t b = 1;
-		
-		cout<<"htle: " <<htole((uint32_t)1) <<endl;
-		cout<<"l: " <<((char*)&b)[0] <<endl;
-		cout<<"b: " <<((char*)&b)[3] <<endl;
-		
 		//check if we need to swap the byte ordering
-		if(mem->end == OO::LittleEndian)	{cout<<"htle" <<endl; i = htole(i);}
-		else								{cout<<"htbe" <<endl; i = htobe(i);}
+		if(mem->end == OO::LittleEndian)	i = htole(i);
+		else								i = htobe(i);
 		
 		unsigned ns = tell() + sizeof(i);
 		if(ns > size())

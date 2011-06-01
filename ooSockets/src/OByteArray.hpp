@@ -693,7 +693,8 @@ protected:
 	defined(__i686__)			|| \
 	defined(i386)				|| \
 	defined(__i386)				|| \
-	defined(__i386__)
+	defined(__i386__)			|| \
+	defined(__arm__)
 	
 	//host byte ordering to little endian
 	inline int16_t htole(int16_t i) { return i; }
