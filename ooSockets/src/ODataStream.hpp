@@ -480,13 +480,13 @@ protected:
 					q_mem->q_readhead = q_mem->q_head.size() != header_size;
 				}
 				
-				cout<<"read:"  <<q_mem->q_head.size() <<endl;
+//				cout<<"read:"  <<q_mem->q_head.size() <<endl;
 				
-				for(int i=0; i<q_mem->q_head.size(); i++) {
-					cout<<(int)q_mem->q_head.data()[i] <<" ";
-				} cout<<endl;
+//				for(int i=0; i<q_mem->q_head.size(); i++) {
+//					cout<<(int)q_mem->q_head.data()[i] <<" ";
+//				} cout<<endl;
 				
-				cout<<"avail: " <<q_mem->q_sock.available() <<endl;
+//				cout<<"avail: " <<q_mem->q_sock.available() <<endl;
 				
 				//we have not finished reading in the head, so return and wait
 				//for more data
@@ -600,18 +600,18 @@ protected:
 			length = data.size() + head.size() - sizeof(PacketLength);
 			head<<length;
 			
-			for(int i=0; i<head.size(); i++) {
-				cout<<(int)head.data()[i] <<" ";
-			} cout<<endl;
+//			for(int i=0; i<head.size(); i++) {
+//				cout<<(int)head.data()[i] <<" ";
+//			} cout<<endl;
 			
-			cout<<"l: " <<length <<" c: " <<(int)config <<" t: " <<(int)type <<endl;
+//			cout<<"l: " <<length <<" c: " <<(int)config <<" t: " <<(int)type <<endl;
 //			cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
 			
 			//assume the whole header will be written...
 			head.seek(0);
 			int hlen = 0;
 			if((hlen = q_mem->q_sock.write(head)) < 0) {
-				cout<<"could not write" <<endl;
+//				cout<<"could not write" <<endl;
 				//the connection was closed so just unlock the mutex and return
 				i->unlock();
 				return;
