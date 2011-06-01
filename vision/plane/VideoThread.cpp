@@ -32,6 +32,8 @@ void VideoThread::run() {
 		//Grab Frames
 		OTime a;
 		frame = cvQueryFrame(capture);
+		frame = cvQueryFrame(capture);
+		frame = cvQueryFrame(capture);
 		cout<<"time: " <<a.elapsed() <<endl;
 		
 		if(!frame) {
