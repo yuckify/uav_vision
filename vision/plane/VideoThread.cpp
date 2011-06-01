@@ -23,6 +23,10 @@ void VideoThread::run() {
 	p[1] = 100;
 	p[2] = 0;
 	
+	OTime elap;
+	elap.setCurrent();
+	int frate = 0;
+	
 	while(1) {
 		if(!stream->socket().connected()) {
 			usleep(100000);
@@ -30,20 +34,14 @@ void VideoThread::run() {
 		}
 		
 		//Grab Frames
-		OTime a;
-		a.setCurrent();
 		frame = cvQueryFrame(capture);
-		cout<<"time: " <<a.elapsed() <<endl;
 		
-		/*
-		a.setCurrent();
-		frame = cvQueryFrame(capture);
-		cout<<"time: " <<a.elapsed() <<endl;
+		frate++;
+		if(elap.elapsed() > 1000000) {
+			cout<<"frame: " <<frate <<endl;
+			frate = 0;
+		}
 		
-		a.setCurrent();
-		frame = cvQueryFrame(capture);
-		cout<<"time: " <<a.elapsed() <<endl;
-		*/
 		
 		if(!frame) {
 			cout<<"Error Capturing Frame" <<endl;
