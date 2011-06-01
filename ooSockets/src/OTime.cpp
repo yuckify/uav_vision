@@ -19,10 +19,7 @@ void OTime::setCurrent() {
 }
 
 int OTime::elapsed() const {
-	OTime cur = current();
-	return cur.us - us;
-//	OTime elap(current().operator-(*this));
-//	return elap.sec()*(int64_t)1000 + elap.msec();
+	return current().us - us;
 }
 
 uint64_t OTime::uelapsed() const {

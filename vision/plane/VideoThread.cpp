@@ -33,8 +33,13 @@ void VideoThread::run() {
 		OTime a;
 		a.setCurrent();
 		frame = cvQueryFrame(capture);
+		a.setCurrent();
+		cout<<"time: " <<a.elapsed() <<endl;
 		frame = cvQueryFrame(capture);
+		a.setCurrent();
+		cout<<"time: " <<a.elapsed() <<endl;
 		frame = cvQueryFrame(capture);
+		a.setCurrent();
 		cout<<"time: " <<a.elapsed() <<endl;
 		
 		if(!frame) {
