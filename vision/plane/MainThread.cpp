@@ -60,7 +60,7 @@ MainThread::MainThread() :
 	//**************************************************
 	gc.setSendHandler(VideoFrame, PriorityHigh);
 	gc.setSendHandler(ImageDetails, PriorityMed);
-	gc.setDisconnectSig(bind(&MainThread::groundDisconnected, this));
+	gc.setDisconnectHandler(bind(&MainThread::groundDisconnected, this));
 	//setup the receive handlers
 	
 	gc.setRecvHandler(CameraZoomIn, std::bind(&MainThread::cameraZoomIn, 
