@@ -40,6 +40,7 @@ void VideoThread::run() {
 		if(elap.elapsed() > 1000000) {
 			cout<<"frame: " <<frate <<endl;
 			frate = 0;
+			elap.setCurrent();
 		}
 		
 		
