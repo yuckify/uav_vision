@@ -116,5 +116,4 @@ HEADERS += MainThread.h \
     ../../ooSockets/src/OTerminal.h
 
 OTHER_FILES += \
-    ../plane-build-desktop/Makefile \
     Makefile

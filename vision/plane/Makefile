@@ -25,10 +25,11 @@ SOURCES=../../ooSockets/src/OAddressInfo.cpp \
 ../../ooSockets/src/OVersion.cpp \
 main.cpp \
 MainThread.cpp \
-VideoThread.cpp
-CC=arm-linux-gnueabi-g++-4.5
+VideoThread.cpp \
+../common/ImageDatabase.cpp
+CC=g++
 CFLAGS=-c -std=c++0x -Wall -DOO_OPENCV -I../../ooSockets/src -I. -I../common `pkg-config --cflags opencv`
-LDFLAGS=`pkg-config --libs opencv`
+LDFLAGS=`pkg-config --libs opencv` -lboost_regex -lpthread -lboost_filesystem -lboost_system
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=plane
 all: $(SOURCES) $(EXECUTABLE)

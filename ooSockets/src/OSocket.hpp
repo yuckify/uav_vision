@@ -95,7 +95,7 @@
 
 #endif
 
-using namespace std::placeholders;
+//using namespace std::placeholders;
 
 /*!	This is a simple socket class that provides an easy to use
  *	interface for BSD sockets. The OThread object is typically used

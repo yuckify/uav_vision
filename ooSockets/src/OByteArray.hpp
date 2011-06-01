@@ -49,7 +49,6 @@
 
 #ifndef __windows__
 	#include<tr1/functional>
-	using namespace std::placeholders;
 #endif
 
 using namespace std;

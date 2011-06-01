@@ -34,7 +34,6 @@ using namespace std;
 //
 template<class PacketLength = uint32_t, 
 		 class PacketType = uint8_t,
-		 OO::Endian useEndian = OO::LittleEndian,
 		 bool enableConfig = true,
 		 bool enableSecurity = false>
 							   class ODataStream {
@@ -197,40 +196,32 @@ public:
 		
 		//initialize the write state functions
 		q_mem->writeFuns[WriteInit] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeInit, this);
 		q_mem->writeFuns[WriteHigh] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeHigh, this);
 		q_mem->writeFuns[WriteFinish] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeFinish, this);
 		q_mem->writeFuns[WriteLow] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeLow, this);
 		
 		//initialize the socket callbacks
 		q_mem->q_sock.readyReadFunc(bind(&ODataStream<PacketLength,
-										 PacketType, useEndian,
-										 enableConfig, enableSecurity>::
+										 PacketType, enableConfig, enableSecurity>::
 										 readyRead, this));
 		q_mem->q_sock.readyWriteFunc(bind(&ODataStream<PacketLength,
-										  PacketType, useEndian,
-										  enableConfig, enableSecurity>::
+										  PacketType, enableConfig, enableSecurity>::
 										  readyWrite, this));
 		q_mem->q_sock.disconnectFunc(bind(&ODataStream<PacketLength,
-										  PacketType, useEndian,
-										  enableConfig, enableSecurity>::
+										  PacketType, enableConfig, enableSecurity>::
 										  sockDisconnected, this));
 		
 		//initialize the pipe callback
 		q_mem->q_activity.readFunc(bind(&ODataStream<PacketLength,
-											 PacketType, useEndian,
-											 enableConfig, enableSecurity>::
+											 PacketType, enableConfig, enableSecurity>::
 											pipeRead, this));
 		q_mem->q_creator = pthread_self();
 		q_mem->q_activity.parent(parent);
@@ -238,7 +229,8 @@ public:
 		q_mem->q_packetsize = 5000;
 		
 		//make sure the memory buffers know what endian we are using
-		q_mem->q_head.setEndian(useEndian);
+		setEndian(OO::LittleEndian);
+		q_mem->q_head.setEndian(endian());
 	}
 	
 #ifdef OO_QT
@@ -248,47 +240,40 @@ public:
 		
 		//initialize the write state functions
 		q_mem->writeFuns[WriteInit] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeInit, this);
 		q_mem->writeFuns[WriteHigh] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeHigh, this);
 		q_mem->writeFuns[WriteFinish] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeFinish, this);
 		q_mem->writeFuns[WriteLow] = bind(&ODataStream<PacketLength,
-							PacketType, useEndian,
-							enableConfig, enableSecurity>::
+							PacketType, enableConfig, enableSecurity>::
 							writeLow, this);
 		
 		//initialize the socket callbacks
 		q_mem->q_sock.readyReadFunc(bind(&ODataStream<PacketLength,
-										 PacketType, useEndian,
-										 enableConfig, enableSecurity>::
+										 PacketType, enableConfig, enableSecurity>::
 										 readyRead, this));
 		q_mem->q_sock.readyWriteFunc(bind(&ODataStream<PacketLength,
-										  PacketType, useEndian,
-										  enableConfig, enableSecurity>::
+										  PacketType, enableConfig, enableSecurity>::
 										  readyWrite, this));
 		q_mem->q_sock.disconnectFunc(bind(&ODataStream<PacketLength,
-										  PacketType, useEndian,
-										  enableConfig, enableSecurity>::
+										  PacketType, enableConfig, enableSecurity>::
 										  sockDisconnected, this));
 		
 		//initialize the pipe callback
 		q_mem->q_activity.readFunc(bind(&ODataStream<PacketLength,
-											 PacketType, useEndian,
-											 enableConfig, enableSecurity>::
+											 PacketType, enableConfig, enableSecurity>::
 											pipeRead, this));
 		q_mem->q_creator = pthread_self();
 		
 		q_mem->q_packetsize = 5000;
 		
 		//make sure the memory buffers know what endian we are using
-		q_mem->q_head.setEndian(useEndian);
+		setEndian(OO::LittleEndian);
+		q_mem->q_head.setEndian(endian());
 	}
 #endif
 	
@@ -297,7 +282,8 @@ public:
 	}
 	
 	void setEndian(OO::Endian end) {
-		q_mem->q_end = end;
+		if(q_mem)
+			q_mem->q_end = end;
 	}
 	
 	OO::Endian endian() const {
@@ -371,8 +357,13 @@ public:
 		}
 	}
 	
-	void setDisconnectSig(function< void () > cbk) {
+	void setDisconnectHandler(function< void () > cbk) {
 		q_mem->q_disconnect = cbk;
+	}
+	
+	void clearHandlers() {
+		q_mem->q_handlers.clear();
+		q_mem->q_disconnect = NULL;
 	}
 	
 	/**	Get the priority associated with a packet id.
@@ -524,7 +515,7 @@ protected:
 			//make sure we have a buffer allocated for the packet
 			while(q_mem->q_type >= q_mem->q_recvBuff.size()) {
 				q_mem->q_recvBuff.push_back(OByteArray());
-				q_mem->q_recvBuff.back().setEndian(useEndian);
+				q_mem->q_recvBuff.back().setEndian(endian());
 			}
 			
 //			cout<<"t: " <<(int)q_mem->q_type <<" l: " <<q_mem->q_length <<endl;
