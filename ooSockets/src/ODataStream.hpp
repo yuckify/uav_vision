@@ -448,7 +448,7 @@ public:
 	
 protected:
 	void readyRead() {
-//		cout<<"read" <<endl;
+		cout<<"read" <<endl;
 		do {
 			//first check if we need to read in the header for the next packet
 			if(q_mem->q_readhead) {
@@ -480,13 +480,13 @@ protected:
 					q_mem->q_readhead = q_mem->q_head.size() != header_size;
 				}
 				
-//				cout<<"read:"  <<q_mem->q_head.size() <<endl;
+				cout<<"read:"  <<q_mem->q_head.size() <<endl;
 				
 //				for(int i=0; i<q_mem->q_head.size(); i++) {
 //					cout<<(int)q_mem->q_head.data()[i] <<" ";
 //				} cout<<endl;
 				
-//				cout<<"avail: " <<q_mem->q_sock.available() <<endl;
+				cout<<"avail: " <<q_mem->q_sock.available() <<endl;
 				
 				//we have not finished reading in the head, so return and wait
 				//for more data
@@ -497,7 +497,7 @@ protected:
 				q_mem->q_head.seek(0);
 				q_mem->q_head>>(q_mem->q_length);
 				
-				//if we are using he config byte deserialize it
+				//if we are using the config byte deserialize it
 				if(enableConfig) {
 					q_mem->q_head>>(q_mem->q_config);
 				}
@@ -505,12 +505,14 @@ protected:
 				//read the packet type
 				q_mem->q_head>>(q_mem->q_type);
 				
-//				cout<<"l: " <<q_mem->q_length <<" c: " <<(int)q_mem->q_config 
-//						<<" t: " <<(int)q_mem->q_type <<endl;
+				cout<<"l: " <<q_mem->q_length <<" c: " <<(int)q_mem->q_config 
+						<<" t: " <<(int)q_mem->q_type <<endl;
 				
 				//we are done with the header buffer so clear it
 				q_mem->q_head.clear();
 			}
+			
+			exit(0);
 			
 			//make sure we have a buffer allocated for the packet
 			while(q_mem->q_type >= q_mem->q_recvBuff.size()) {

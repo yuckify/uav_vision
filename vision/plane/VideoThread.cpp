@@ -67,6 +67,7 @@ void VideoThread::run() {
 		if(stream->socket().connected()) {
 			OByteArray data;
 			data<<temp;
+			cout<<"write size: " <<data.size() <<endl;
 			stream->write(VideoFrame, data);
 		}
 		cvReleaseMat(&temp);
