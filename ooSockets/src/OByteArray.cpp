@@ -230,11 +230,14 @@ void OByteArray::write(uint16_t i) {
 	}
 }
 
+#include<iostream>
+using namespace std;
+
 void OByteArray::write(uint32_t i) {
 	if(mem->writting) {
 		//check if we need to swap the byte ordering
-		if(mem->end == OO::LittleEndian)	{cout<<"htle" <<endl;i = htole(i);{
-		else								i = htobe(i);
+		if(mem->end == OO::LittleEndian)	{cout<<"htle" <<endl; i = htole(i);}
+		else								{cout<<"htbe" <<endl; i = htobe(i);}
 		
 		unsigned ns = tell() + sizeof(i);
 		if(ns > size())
