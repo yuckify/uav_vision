@@ -694,7 +694,7 @@ protected:
 	defined(i386)				|| \
 	defined(__i386)				|| \
 	defined(__i386__)
-	test
+	
 	//host byte ordering to little endian
 	inline int16_t htole(int16_t i) { return i; }
 	inline uint16_t htole(uint16_t i) { return i; }
