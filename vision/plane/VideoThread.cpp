@@ -24,8 +24,7 @@ void VideoThread::run() {
 	p[2] = 0;
 	
 	while(1) {
-		if(0) {
-//		if(!stream->socket().connected()) {
+		if(!stream->socket().connected()) {
 			usleep(100000);
 			continue;
 		}
@@ -59,8 +58,10 @@ void VideoThread::run() {
 		}
 		comptex.unlock();
 		
+		
+		usleep(500000);
 		cout<<"temp: " <<temp->rows <<" " <<temp->cols <<endl;
-		exit(0);
+//		exit(0);
 		
 		//write the frame to the data stream
 		if(stream->socket().connected()) {
