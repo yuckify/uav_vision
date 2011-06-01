@@ -230,9 +230,6 @@ void OByteArray::write(uint16_t i) {
 	}
 }
 
-#include<iostream>
-using namespace std;
-
 void OByteArray::write(uint32_t i) {
 	if(mem->writting) {
 		//check if we need to swap the byte ordering
