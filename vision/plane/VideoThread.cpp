@@ -24,16 +24,14 @@ void VideoThread::run() {
 	p[2] = 0;
 	
 	while(1) {
-		if(!stream->socket().connected()) {
+		if(1) {
+//		if(!stream->socket().connected()) {
 			usleep(100000);
 			continue;
 		}
 		
 		//Grab Frames
 		frame = cvQueryFrame(capture);
-		
-		cvSaveImage("test.jpg", frame);
-		exit(0);
 		
 		if(!frame) {
 			cout<<"Error Capturing Frame" <<endl;
@@ -58,6 +56,9 @@ void VideoThread::run() {
 			
 		}
 		comptex.unlock();
+		
+		cout<<"temp: " <<temp->rows <<" " <<temp->cols <<endl;
+		exit(0);
 		
 		//write the frame to the data stream
 		if(stream->socket().connected()) {
