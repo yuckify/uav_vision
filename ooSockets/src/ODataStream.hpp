@@ -448,7 +448,7 @@ public:
 	
 protected:
 	void readyRead() {
-		cout<<"read" <<endl;
+//		cout<<"read" <<endl;
 		do {
 			//first check if we need to read in the header for the next packet
 			if(q_mem->q_readhead) {
@@ -505,14 +505,12 @@ protected:
 				//read the packet type
 				q_mem->q_head>>(q_mem->q_type);
 				
-				cout<<"l: " <<q_mem->q_length <<" c: " <<(int)q_mem->q_config 
-						<<" t: " <<(int)q_mem->q_type <<endl;
+//				cout<<"l: " <<q_mem->q_length <<" c: " <<(int)q_mem->q_config 
+//						<<" t: " <<(int)q_mem->q_type <<endl;
 				
 				//we are done with the header buffer so clear it
 				q_mem->q_head.clear();
 			}
-			
-			exit(0);
 			
 			//make sure we have a buffer allocated for the packet
 			while(q_mem->q_type >= q_mem->q_recvBuff.size()) {
@@ -621,7 +619,7 @@ protected:
 			//write the payload
 			int plen = 0;
 			if((plen = q_mem->q_sock.write(data)) < 0) {
-				cout<<"could not write" <<endl;
+//				cout<<"could not write" <<endl;
 				//the connection was closed so just unlock the mutex and return
 				i->unlock();
 				return;
