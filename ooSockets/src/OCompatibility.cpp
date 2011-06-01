@@ -128,8 +128,13 @@ OByteArray& operator>>(OByteArray& data, IplImage*& img) {
 OByteArray& operator<<(OByteArray& data, CvMat*& mat) {
 	if(!mat) return data;
 	
+	//standardize the header with a known alignment
+	int32_t rows = mat->rows;
+	int32_t cols = mat->cols;
+	int32_t type = mat->type;
+	
 	//serialize the header
-	data<<mat->rows <<mat->cols <<mat->type;
+	data<<rows <<cols <<type;
 	
 	//serialize the data, this data is unaligned so no
 	//iteration is necessary
@@ -139,9 +144,9 @@ OByteArray& operator<<(OByteArray& data, CvMat*& mat) {
 }
 
 OByteArray& operator>>(OByteArray& data, CvMat*& mat) {
-	int rows;
-	int cols;
-	int type;
+	int32_t rows;
+	int32_t cols;
+	int32_t type;
 	
 	//deserialize the header
 	data>>rows >>cols >>type;

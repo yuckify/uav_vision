@@ -210,7 +210,8 @@ CVOperator::CVOperator(QWidget *parent) :
 	
 	
 	//setup the callbacks for the ground connection
-	gc.setRecvHandler(VideoFrame, [this](OByteArray ba)->void{
+	gc.setRecvHandler(VideoFrame, [this](OByteArray ba)->void {
+	                  cout<<"got frame" <<endl;
 		CvMat* compFrame = NULL;
 		
 		ba>>compFrame;
