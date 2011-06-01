@@ -32,6 +32,9 @@ void VideoThread::run() {
 		//Grab Frames
 		frame = cvQueryFrame(capture);
 		
+		cvSaveImage("test.jpg", frame);
+		exit(0);
+		
 		if(!frame) {
 			cout<<"Error Capturing Frame" <<endl;
 			break;
