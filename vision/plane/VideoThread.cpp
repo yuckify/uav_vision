@@ -31,6 +31,7 @@ void VideoThread::run() {
 		
 		//Grab Frames
 		OTime a;
+		a.setCurrent();
 		frame = cvQueryFrame(capture);
 		frame = cvQueryFrame(capture);
 		frame = cvQueryFrame(capture);
