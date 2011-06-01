@@ -235,6 +235,9 @@ using namespace std;
 
 void OByteArray::write(uint32_t i) {
 	if(mem->writting) {
+		
+		cout<<"htle: " <<htole((uint32_t)1);
+		
 		//check if we need to swap the byte ordering
 		if(mem->end == OO::LittleEndian)	{cout<<"htle" <<endl; i = htole(i);}
 		else								{cout<<"htbe" <<endl; i = htobe(i);}
