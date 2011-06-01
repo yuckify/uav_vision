@@ -604,7 +604,7 @@ protected:
 //				cout<<(int)head.data()[i] <<" ";
 //			} cout<<endl;
 			
-//			cout<<"l: " <<length <<" c: " <<(int)config <<" t: " <<(int)type <<endl;
+			cout<<"l: " <<length <<" c: " <<(int)config <<" t: " <<(int)type <<endl;
 //			cout<<"hs: " <<head.size() <<" ds: " <<data.size() <<endl;
 			
 			//assume the whole header will be written...
