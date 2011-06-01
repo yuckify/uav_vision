@@ -38,6 +38,7 @@ void VideoThread::run() {
 			break;
 		}
 		
+		cout<<"before lock" <<endl;
 		comptex.lock();
 		CvMat* temp;
 		
